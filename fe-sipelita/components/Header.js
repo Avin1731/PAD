@@ -79,6 +79,7 @@ export default function Header() {
   } else if (userRoleName === 'pusdatin') {
       navLinks = [
           { name: 'Beranda', href: baseHref },
+          { name: 'Portal Informasi', href: `${baseHref}/portal-informasi` },
           { name: 'Pengaturan Deadline', 
             href: `${baseHref}/pengaturan-deadline`, 
             dropdown: [
@@ -159,7 +160,7 @@ export default function Header() {
                       <div className="bg-white rounded-md shadow-lg border border-gray-200">
                         <div className="py-1">
                           {link.dropdown.map((item) => (
-                            <Link key={item.name} href={item.href} className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-[#00A86B] flex items-center">
+                            <Link key={item.name} href={item.href} className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#00A86B]/10 hover:text-[#00A86B] flex items-center">
                               {item.icon && <item.icon className="w-4 h-4 mr-2" />}
                               {item.name}
                             </Link>
@@ -174,23 +175,34 @@ export default function Header() {
           </nav>
           
           <div className="relative" ref={profileRef}>
-            <button onClick={() => setProfileOpen(!isProfileOpen)} className="flex items-center p-2 rounded-full hover:bg-gray-100 focus:outline-none">
-              <UserIcon />
-              <ChevronDownIcon />
+            <button
+              onClick={() => setProfileOpen(!isProfileOpen)}
+              className="flex items-center p-2 rounded-full hover:bg-green-100 focus:outline-none"
+            >
+              <UserIcon className="w-5 h-5 text-[#005952]" />
+              <ChevronDownIcon className="w-4 h-4 ml-1 text-[#005952]" />
             </button>
+
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
                 <div className="py-1">
-                  <Link href="/profile" className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-[#005952]"> 
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 text-sm text-gray-800 hover:bg-[#00A86B]/10 hover:text-[#00A86B] transition-colors"
+                  >
                     Profil
                   </Link>
-                  <button onClick={logout} className="w-full text-left block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-[#00A86B]">
+                  <button
+                    onClick={logout}
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-800 hover:bg-[#00A86B]/10 hover:text-[#00A86B] transition-colors"
+                  >
                     Logout
                   </button>
                 </div>
               </div>
             )}
           </div>
+
         </div>
       </header>
 
