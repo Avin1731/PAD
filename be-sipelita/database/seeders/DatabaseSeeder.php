@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ProvinceSeeder::class,
             RegencySeeder::class,
             UserSeeder::class,
+            DeadlineSeeder::class,
         ]);
     }
 }

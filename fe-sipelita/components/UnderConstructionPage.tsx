@@ -2,7 +2,7 @@
 "use client"; // <-- 1. WAJIB ditambahkan
 
 import { useRouter } from 'next/navigation'; // <-- 2. Impor useRouter
-import SintaFullLogo from '@/components/SintaFullLogo';
+import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 // 3. Hapus props tombol
 interface Props {
@@ -20,14 +20,13 @@ export default function UnderConstructionPage({
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen py-12 px-4 space-y-8">
-      {/* Logo di luar card */}
-      <div className="flex justify-center">
-        <SintaFullLogo />
-      </div>
-
       {/* Card */}
       <div className="bg-white p-8 sm:p-10 rounded-xl shadow-xl w-full max-w-md text-center border border-gray-300">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">{title}</h1>
+
+        <div className="flex justify-center mb-4">
+          <WrenchScrewdriverIcon className="w-16 h-16 text-[#00A86B] animate-bounce" />
+        </div>
         
         <p className="text-gray-600 mb-6">
           {message}
