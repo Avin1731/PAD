@@ -17,14 +17,15 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-
-            $table->foreignId('role_id')->constrained('roles');
-            $table->foreignId('jenis_dlh_id')->nullable()->constrained('jenis_dlhs');
-
+            
+            // --- KITA PINDAHKAN SEMUA RELASI & KOLOM KUSTOM ---
+            // (Kolom-kolom ini akan dibuat di file migrasi terpisah)
+            
             $table->rememberToken();
             $table->timestamps();
         });
 
+        // (Biarkan ini jika ada di file Anda, ini standar)
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
@@ -46,8 +47,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
+        // Drop tabel dalam urutan terbalik
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

@@ -79,7 +79,7 @@ export default function Header() {
   } else if (userRoleName === 'pusdatin') {
       navLinks = [
           { name: 'Beranda', href: baseHref },
-          { name: 'Portal Informasi', href: `${baseHref}/portal-informasi` },
+          // { name: 'Portal Informasi', href: `${baseHref}/portal-informasi` },
           { name: 'Pengaturan Deadline', 
             href: `${baseHref}/pengaturan-deadline`, 
             dropdown: [

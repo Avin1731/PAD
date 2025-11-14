@@ -4,14 +4,14 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\DB;
 use App\Models\Regency;
 
 class RegencySeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('regencies')->truncate();
+        // DB::table('regencies')->truncate();
 
         $regencies = [
             ['id' => '11.01', 'name' => 'Aceh Selatan'],
