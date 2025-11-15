@@ -13,16 +13,19 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    // --- PERBAIKAN 1: TAMBAHKAN BLOK INI ---
     /**
      * The relationships that should always be loaded.
-     * (Ini sudah benar)
+     * Ini "memaksa" Eloquent untuk selalu menyertakan data relasi (Eager Loading).
+     * Ini akan memperbaiki error 'Cannot read properties of undefined (reading 'name')'.
+     *
      * @var array
      */
     protected $with = ['role', 'jenisDlh', 'province', 'regency'];
+    // --- AKHIR PERBAIKAN 1 ---
 
     /**
      * The attributes that are mass assignable.
-     * (Ini sudah benar)
      * @var array<int, string>
      */
     protected $fillable = [
@@ -35,17 +38,18 @@ class User extends Authenticatable
         'province_id',
         'regency_id',
         'pesisir',
+        'status', // <-- PERBAIKAN 2: TAMBAHKAN 'status'
     ];
 
     /**
      * The attributes that should be hidden for serialization.
-     * (Ini sudah benar)
+     * @var array<int, string>
      */
     protected $hidden = [ 'password', 'remember_token' ];
 
     /**
      * Get the attributes that should be cast.
-     * (Ini sudah benar)
+     * @var array<string, string>
      */
     protected function casts(): array
     {
@@ -57,44 +61,24 @@ class User extends Authenticatable
 
     /*
     |--------------------------------------------------------------------------
-    | RELASI (PERBAIKAN KRUSIAL DI SINI)
+    | RELASI (Kode Anda di sini sudah benar)
     |--------------------------------------------------------------------------
     */
-
-    /**
-     * Get the role that owns the user.
-     * (Relasi ini sudah benar, tapi kita buat eksplisit)
-     */
     public function role(): BelongsTo
     {
-        // Foreign Key di tabel 'users' -> Owner Key (Primary Key) di tabel 'roles'
         return $this->belongsTo(Role::class, 'role_id', 'id');
     }
 
-    /**
-     * Get the jenis_dlh that owns the user.
-     * (Relasi ini sudah benar, tapi kita buat eksplisit)
-     */
     public function jenisDlh(): BelongsTo
     {
         return $this->belongsTo(JenisDlh::class, 'jenis_dlh_id', 'id');
     }
 
-    /**
-     * Get the province that owns the user.
-     * (INI ADALAH PERBAIKAN UTAMA)
-     */
     public function province(): BelongsTo
     {
-        // Kita harus memberitahu Eloquent bahwa 'id' di tabel 'provinces'
-        // adalah 'string', bukan 'int'.
         return $this->belongsTo(Province::class, 'province_id', 'id');
     }
 
-    /**
-     * Get the regency that owns the user.
-     * (INI ADALAH PERBAIKAN UTAMA)
-     */
     public function regency(): BelongsTo
     {
         return $this->belongsTo(Regency::class, 'regency_id', 'id');
