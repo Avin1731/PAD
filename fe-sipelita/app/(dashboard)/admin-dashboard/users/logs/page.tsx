@@ -5,7 +5,7 @@ export default function HubungiDeveloperPage() {
   return (
     <UnderConstructionPage
       title="Hubungi Developer"
-      message="Fitur ini sedang dalam pengembangan. Silahkan kembali beberapa waktu lagi atau silakan hubungi Developer."
+      message="Fitur ini sedang dalam pengembangan. Untuk registrasi akun Pusdatin, silakan hubungi Developer."
       // Hapus buttonText dan buttonHref
     />
   );

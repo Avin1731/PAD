@@ -24,10 +24,12 @@ export interface User {
   role_id: number;
   jenis_dlh_id?: number;
   role: Role;
-  jenisDlh?: JenisDlh; // (Relasi ini bisa jadi null dari backend)
+  jenis_dlh?: JenisDlh; // (Relasi ini bisa jadi null dari backend)
   nomor_telepon?: string;
   province_id?: string;
   regency_id?: string;
+  province_name?: string;
+  regency_name?: string;
   pesisir?: string;
 }
 

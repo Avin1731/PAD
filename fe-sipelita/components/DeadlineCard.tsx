@@ -13,18 +13,17 @@ registerLocale('id', id);
 
 interface DeadlineCardProps {
   title: string;
-  startDate: string; // Bisa berupa "DD/MM/YYYY" atau "09T00:00:00.000000Z/12/2025"
-  endDate: string;   // Bisa berupa "DD/MM/YYYY" atau "20T00:00:00.000000Z/12/2025"
+  startDate: string; 
+  endDate: string;
   onSave: (start: string, end: string) => void;
+  disabled?: boolean; // <-- 1. TAMBAHKAN PROP INI
 }
 
 // --- FUNGSI PARSE DATE ---
 const parseDate = (dateString: string): Date | null => {
+    // ... (Logika parseDate Anda tidak berubah)
     if (!dateString) return null;
-
     let cleanDate = dateString;
-
-    // (Logika parsing Anda yang kompleks di sini)
     if (dateString.includes('T') && dateString.includes('/')) {
         const parts = dateString.split('/');
         if (parts.length >= 2) {
@@ -39,7 +38,6 @@ const parseDate = (dateString: string): Date | null => {
             }
         }
     }
-
     const parts = cleanDate.split('/');
     if (parts.length === 3) {
         const day = parseInt(parts[0]);
@@ -50,12 +48,10 @@ const parseDate = (dateString: string): Date | null => {
             return date;
         }
     }
-    
     const isoDate = new Date(dateString);
     if (!isNaN(isoDate.getTime())) {
         return isoDate;
     }
-
     return null;
 };
 
@@ -74,23 +70,20 @@ export default function DeadlineCard({
   startDate,
   endDate,
   onSave,
+  disabled = false, // <-- 2. AMBIL PROP DI SINI
 }: DeadlineCardProps) {
   // State untuk DatePicker (kalender)
   const [localStart, setLocalStart] = useState<Date | null>(parseDate(startDate));
   const [localEnd, setLocalEnd] = useState<Date | null>(parseDate(endDate));
   
-  // --- PERBAIKAN 1: Inisialisasi input sebagai string kosong ---
   const [inputStart, setInputStart] = useState('');
   const [inputEnd, setInputEnd] = useState('');
-  // --- AKHIR PERBAIKAN ---
 
   const datePickerStartRef = useRef<DatePicker>(null);
   const datePickerEndRef = useRef<DatePicker>(null);
 
-  // --- PERBAIKAN 2: useEffect hanya mengatur DatePicker, bukan input teks ---
+  // useEffect tidak berubah, ini sudah benar
   useEffect(() => {
-    // Kita tetap set 'local' agar kalender terbuka di tanggal yang benar
-    // (Bungkus di setTimeout untuk menghindari error 'cascading renders')
     setTimeout(() => {
       const parsedStart = parseDate(startDate);
       setLocalStart(parsedStart);
@@ -101,10 +94,9 @@ export default function DeadlineCard({
       // HAPUS: setInputEnd(parsedEnd ? formatDate(parsedEnd) : '');
     }, 0);
   }, [startDate, endDate]);
-  // --- AKHIR PERBAIKAN ---
 
-  // Format input teks ke DD/MM/YYYY saat mengetik
   const formatInput = (value: string): string => {
+    // ... (logika formatInput tidak berubah)
     const numbers = value.replace(/\D/g, '');
     let formatted = '';
     if (numbers.length <= 2) {
@@ -151,19 +143,24 @@ export default function DeadlineCard({
   };
 
   const handleIconClickStart = () => {
+    // 3. Jangan buka jika disabled
+    if (disabled) return;
     if (datePickerStartRef.current) {
       datePickerStartRef.current.setOpen(true);
     }
   };
 
   const handleIconClickEnd = () => {
+    // 3. Jangan buka jika disabled
+    if (disabled) return;
     if (datePickerEndRef.current) {
       datePickerEndRef.current.setOpen(true);
     }
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition">
+    // 4. Tambahkan styling disabled di card utama
+    <div className={`bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}>
         {/* Judul Card */}
         <h3 className="text-base font-semibold text-gray-800 mb-3">{title}</h3>
         
@@ -173,27 +170,29 @@ export default function DeadlineCard({
           <div className="relative">
             <input
               type="text"
-              value={inputStart} // Sekarang kosong
+              value={inputStart}
               onChange={handleStartChange}
-              className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00A86B] focus:border-transparent placeholder-gray-400"
-              placeholder="DD/MM/YYYY" // <-- Placeholder akan terlihat
+              disabled={disabled} // <-- 5. Terapkan disabled
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00A86B] focus:border-transparent placeholder-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed" // <-- Tambah style disabled
+              placeholder="DD/MM/YYYY"
               maxLength={10}
             />
             <FaCalendarAlt
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#00A86B] text-sm cursor-pointer pointer-events-auto"
+              className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-[#00A86B] text-sm ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`} // <-- Tambah style disabled
               onClick={handleIconClickStart}
             />
             <DatePicker
               ref={datePickerStartRef}
-              selected={localStart} // Kalender tetap tahu tanggal lama
+              selected={localStart}
               onChange={(date) => {
                 setLocalStart(date);
-                setInputStart(formatDate(date)); // <-- Update input teks saat picker berubah
+                setInputStart(formatDate(date));
               }}
               dateFormat="dd/MM/yyyy"
               locale="id"
               showPopperArrow={false}
               className="hidden"
+              disabled={disabled} // <-- 5. Terapkan disabled
             />
           </div>
         </div>
@@ -204,27 +203,29 @@ export default function DeadlineCard({
           <div className="relative">
             <input
               type="text"
-              value={inputEnd} // Sekarang kosong
+              value={inputEnd}
               onChange={handleEndChange}
-              className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00A86B] focus:border-transparent placeholder-gray-400"
-              placeholder="DD/MM/YYYY" // <-- Placeholder akan terlihat
+              disabled={disabled} // <-- 5. Terapkan disabled
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#00A86B] focus:border-transparent placeholder-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed" // <-- Tambah style disabled
+              placeholder="DD/MM/YYYY"
               maxLength={10}
             />
             <FaCalendarAlt
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#00A86B] text-sm cursor-pointer pointer-events-auto"
+              className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-[#00A86B] text-sm ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`} // <-- Tambah style disabled
               onClick={handleIconClickEnd}
             />
             <DatePicker
               ref={datePickerEndRef}
-              selected={localEnd} // Kalender tetap tahu tanggal lama
+              selected={localEnd}
               onChange={(date) => {
                 setLocalEnd(date);
-                setInputEnd(formatDate(date)); // <-- Update input teks saat picker berubah
+                setInputEnd(formatDate(date));
               }}
               dateFormat="dd/MM/yyyy"
               locale="id"
               showPopperArrow={false}
               className="hidden"
+              disabled={disabled} // <-- 5. Terapkan disabled
             />
           </div>
         </div>
@@ -232,9 +233,10 @@ export default function DeadlineCard({
         {/* Tombol Simpan Perubahan */}
         <button
           onClick={handleSave}
-          className="w-full bg-[#00A86B] hover:bg-[#00945F] text-white font-medium text-sm py-1.5 rounded-md transition"
+          disabled={disabled} // <-- 5. Terapkan disabled
+          className="w-full bg-[#00A86B] hover:bg-[#00945F] text-white font-medium text-sm py-1.5 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed" // <-- Tambah style disabled
         >
-          Simpan
+          {disabled ? 'Menyimpan...' : 'Simpan'}
         </button>
     </div>
   );

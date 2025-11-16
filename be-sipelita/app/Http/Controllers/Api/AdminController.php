@@ -4,11 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Province;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
+    // Helper function untuk ambil province dari regency_id
+    private function getProvinceFromRegency($regencyId)
+    {
+        if (!$regencyId) return null;
+        
+        $provinceId = explode('.', $regencyId)[0] ?? null;
+        if ($provinceId) {
+            $province = Province::find($provinceId);
+            return $province->name ?? null;
+        }
+        
+        return null;
+    }
+
     public function getDashboardStats(): JsonResponse
     {
         $totalUsersAktif = User::where('status', 'aktif')->count();
@@ -40,14 +55,53 @@ class AdminController extends Controller
 
         $users = $query->with(['role', 'jenisDlh', 'province', 'regency'])->get();
 
-        return response()->json($users);
+        // Format response untuk include nama provinsi & kabupaten
+        $formattedUsers = $users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'jenis_dlh' => $user->jenisDlh,
+                'province_id' => $user->province_id,
+                'regency_id' => $user->regency_id,
+                'province_name' => $user->province->name ?? $this->getProvinceFromRegency($user->regency_id), // FIXED
+                'regency_name' => $user->regency->name ?? null,
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+        });
+
+        return response()->json($formattedUsers);
     }
 
     public function getUsersPending(): JsonResponse
     {
-        $users = User::where('status', 'pending')->where('role_id', 3)->with(['role', 'jenisDlh', 'province', 'regency'])->get();
+        $users = User::where('status', 'pending')
+            ->where('role_id', 3)
+            ->with(['role', 'jenisDlh', 'province', 'regency'])
+            ->get();
 
-        return response()->json($users);
+        // Format response untuk include nama provinsi & kabupaten
+        $formattedUsers = $users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'jenis_dlh' => $user->jenisDlh,
+                'province_id' => $user->province_id,
+                'regency_id' => $user->regency_id,
+                'province_name' => $user->province->name ?? $this->getProvinceFromRegency($user->regency_id), // FIXED
+                'regency_name' => $user->regency->name ?? null,
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+        });
+
+        return response()->json($formattedUsers);
     }
 
     public function approveUser($id): JsonResponse

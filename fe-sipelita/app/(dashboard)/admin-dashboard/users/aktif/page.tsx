@@ -1,27 +1,33 @@
 'use client';
 
-// ... impor lainnya
 import { useState, useEffect } from 'react';
-import { useAuth, User } from '@/context/AuthContext';
+import { User } from '@/context/AuthContext';
 import StatCard from '@/components/StatCard';
 import InnerNav from '@/components/InnerNav';
 import UserTable from '@/components/UserTable';
+import Pagination from '@/components/Pagination';
+import Link from 'next/link';
 import axios from '@/lib/axios';
 
 const USERS_PER_PAGE = 25;
 
+// 🎨 Warna per-card
+const statCardColors = [
+  { bg: 'bg-blue-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
+  { bg: 'bg-blue-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
+  { bg: 'bg-green-50', border: 'border-green-300', titleColor: 'text-green-600', valueColor: 'text-green-800' },
+  { bg: 'bg-red-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' },
+];
+
 export default function UsersAktifPage() {
-  // ✅ Tambahkan state untuk pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const { provinces, regencies } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State untuk tab
+  // Tab state
   const [activeTab, setActiveTab] = useState('dlh');
   const [activeDlhTab, setActiveDlhTab] = useState('provinsi');
 
-  // Statistik
   const [stats, setStats] = useState({
     dlhProvinsi: 0,
     dlhKabKota: 0,
@@ -29,7 +35,7 @@ export default function UsersAktifPage() {
     admin: 0,
   });
 
-  // Fetch data dari API
+  // --- Fetch ---
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -37,10 +43,10 @@ export default function UsersAktifPage() {
         const data: User[] = res.data;
 
         const dlhProvinsi = data.filter(
-          (u: User) => u.role?.name === 'DLH' && u.jenisDlh?.name === 'DLH Provinsi'
+          (u: User) => u.role?.name === 'DLH' && u.jenis_dlh?.name === 'DLH Provinsi'
         );
         const dlhKabKota = data.filter(
-          (u: User) => u.role?.name === 'DLH' && u.jenisDlh?.name === 'DLH Kab-Kota'
+          (u: User) => u.role?.name === 'DLH' && u.jenis_dlh?.name === 'DLH Kab-Kota'
         );
         const pusdatin = data.filter((u: User) => u.role?.name === 'Pusdatin');
         const admin = data.filter((u: User) => u.role?.name === 'Admin');
@@ -52,8 +58,8 @@ export default function UsersAktifPage() {
           pusdatin: pusdatin.length,
           admin: admin.length,
         });
-      } catch (error) {
-        console.error('Gagal mengambil data user aktif:', error);
+      } catch (e) {
+        console.error('Gagal mengambil data user aktif:', e);
       } finally {
         setLoading(false);
       }
@@ -62,35 +68,32 @@ export default function UsersAktifPage() {
     fetchUsers();
   }, []);
 
-  // ✅ Filter user berdasarkan tab aktif
+  // --- Filter berdasarkan Tab ---
   const filteredUsers = () => {
     if (activeTab === 'dlh') {
       return activeDlhTab === 'provinsi'
-        ? users.filter((u) => u.jenisDlh?.name === 'DLH Provinsi')
-        : users.filter((u) => u.jenisDlh?.name === 'DLH Kab-Kota');
-    } else if (activeTab === 'pusdatin') {
-      return users.filter((u) => u.role?.name === 'Pusdatin');
-    } else if (activeTab === 'admin') {
-      return users.filter((u) => u.role?.name === 'Admin');
+        ? users.filter((u) => u.jenis_dlh?.name === 'DLH Provinsi')
+        : users.filter((u) => u.jenis_dlh?.name === 'DLH Kab-Kota');
     }
+    if (activeTab === 'pusdatin') return users.filter((u) => u.role?.name === 'Pusdatin');
+    if (activeTab === 'admin') return users.filter((u) => u.role?.name === 'Admin');
     return [];
   };
 
-  // ✅ Pagination Logic
-  const paginatedUsers = () => {
-    const startIndex = (currentPage - 1) * USERS_PER_PAGE;
-    const endIndex = startIndex + USERS_PER_PAGE;
-    return filteredUsers().slice(startIndex, endIndex);
-  };
-
+  // --- Pagination ---
   const totalPages = Math.ceil(filteredUsers().length / USERS_PER_PAGE);
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  const paginatedUsers = () => {
+    const start = (currentPage - 1) * USERS_PER_PAGE;
+    return filteredUsers().slice(start, start + USERS_PER_PAGE);
   };
 
+  // Reset page ketika tab berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, activeDlhTab]);
+
+  // Tabs
   const dlhTabs = [
     { label: 'Provinsi', value: 'provinsi' },
     { label: 'Kab/Kota', value: 'kabkota' },
@@ -102,63 +105,66 @@ export default function UsersAktifPage() {
     { label: 'Admin', value: 'admin' },
   ];
 
+  const isDlhTabActive = activeTab === 'dlh';
+
+  // Stats untuk StatCard dengan link
+  const statsData = [
+    { title: 'Total DLH Provinsi Aktif', value: stats.dlhProvinsi.toString(), link: '#dlh' },
+    { title: 'Total DLH Kab/Kota Aktif', value: stats.dlhKabKota.toString(), link: '#dlh' },
+    { title: 'Total Pusdatin Aktif', value: stats.pusdatin.toString(), link: '#pusdatin' },
+    { title: 'Total Admin Aktif', value: stats.admin.toString(), link: '#admin' },
+  ];
+
   if (loading) {
     return (
-      <div className="space-y-8 p-8">
-        <h1 className="text-3xl font-extrabold text-gray-800">Memuat Data...</h1>
-        <div className="h-64 bg-gray-100 rounded-xl animate-pulse"></div>
+      <div className="p-8 space-y-8">
+        <h1 className="text-3xl font-extrabold text-[#00A86B]">Memuat Data...</h1>
+        <div className="h-64 bg-gray-100 animate-pulse rounded-xl"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="p-8 space-y-8">
       {/* Header */}
       <header>
-        <h1 className="text-3xl font-extrabold text-gray-800">Manajemen Pengguna Aktif</h1>
+        <h1 className="text-3xl font-extrabold text-[#00A86B]">Manajemen Pengguna Aktif</h1>
         <p className="text-gray-600">Daftar pengguna yang telah diverifikasi dan aktif di sistem.</p>
       </header>
 
-      {/* Statistik */}
+      {/* Statistik dengan Link */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard
-          title="Total DLH Provinsi Aktif"
-          value={stats.dlhProvinsi}
-          bgColor="bg-white"
-          borderColor="border-gray-200"
-          titleColor="text-gray-700"
-          valueColor="text-blue-600"
-        />
-        <StatCard
-          title="Total DLH Kab/Kota Aktif"
-          value={stats.dlhKabKota}
-          bgColor="bg-white"
-          borderColor="border-gray-200"
-          titleColor="text-gray-700"
-          valueColor="text-blue-600"
-        />
-        <StatCard
-          title="Total Pusdatin Aktif"
-          value={stats.pusdatin}
-          bgColor="bg-white"
-          borderColor="border-gray-200"
-          titleColor="text-gray-700"
-          valueColor="text-green-600"
-        />
-        <StatCard
-          title="Total Admin Aktif"
-          value={stats.admin}
-          bgColor="bg-white"
-          borderColor="border-gray-200"
-          titleColor="text-gray-700"
-          valueColor="text-red-600"
-        />
+        {statsData.map((stat, index) => (
+          <Link 
+            key={index} 
+            href={stat.link}
+            onClick={(e) => {
+              e.preventDefault();
+              // Scroll ke section atau set active tab
+              if (stat.link === '#dlh') {
+                setActiveTab('dlh');
+                setActiveDlhTab(stat.title.includes('Provinsi') ? 'provinsi' : 'kabkota');
+              } else if (stat.link === '#pusdatin') {
+                setActiveTab('pusdatin');
+              } else if (stat.link === '#admin') {
+                setActiveTab('admin');
+              }
+            }}
+            className="h-full"
+          >
+            <StatCard
+              {...statCardColors[index]}
+              title={stat.title}
+              value={stat.value}
+            />
+          </Link>
+        ))}
       </div>
 
-      {/* Inner Nav Utama */}
+      {/* Main Tabs */}
       <InnerNav tabs={mainTabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Inner Nav DLH (hanya muncul jika tab DLH aktif) */}
+      {/* DLH Sub Tabs */}
       {activeTab === 'dlh' && (
         <InnerNav
           tabs={dlhTabs}
@@ -170,45 +176,32 @@ export default function UsersAktifPage() {
 
       {/* Tabel User */}
       <UserTable
-        users={paginatedUsers().map(u => {
-          const provinceName = provinces.find(p => p.id === u.province_id)?.name ?? null;
-          const regencyName = regencies.find(r => r.id === u.regency_id)?.name ?? null;
-
-          return {
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role?.name ?? '-',
-            jenis_dlh: u.jenisDlh?.name,
-            status: 'aktif',
-            province: provinceName,
-            regency: regencyName,
-          };
-        })}
-        showLocation={activeTab === 'dlh'}
+        users={paginatedUsers().map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role?.name ?? '-',
+          jenis_dlh: u.jenis_dlh?.name,
+          status: 'aktif',
+          province: u.province_name ?? '-',
+          regency: u.regency_name ?? '-',
+        }))}
+        showLocation={isDlhTabActive}
+        showDlhSpecificColumns={isDlhTabActive}
       />
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       <div className="flex justify-between items-center mt-6">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className={`px-4 py-2 rounded-md ${currentPage === 1 ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-        >
-          Sebelumnya
-        </button>
-
-        <span className="text-gray-700">
-          Halaman {currentPage} dari {totalPages}
+        <span className="text-sm text-gray-600">
+          Menampilkan {paginatedUsers().length} dari {filteredUsers().length} pengguna
         </span>
 
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className={`px-4 py-2 rounded-md ${currentPage === totalPages ? 'bg-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-        >
-          Selanjutnya
-        </button>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          siblings={1}
+        />
       </div>
     </div>
   );

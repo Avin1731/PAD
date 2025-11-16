@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DeadlineCard from '@/components/DeadlineCard';
-import ConfirmationModal from '@/components/ConfirmationModal';
+// 1. Ganti ke UniversalModal
+import UniversalModal from '@/components/UniversalModal';
 import axios from '@/lib/axios';
 
 // Tipe data deadline dari API
@@ -16,6 +17,17 @@ interface ApiDeadline {
 
 type DeadlineType = 'Penilaian SLHD' | 'Penilaian Penghargaan' | 'Validasi 1' | 'Validasi 2';
 
+// 2. Buat state awal (untuk reset)
+const INITIAL_MODAL_CONFIG = {
+  title: '',
+  message: '',
+  variant: 'warning' as 'success' | 'warning' | 'danger',
+  showCancelButton: true,
+  onConfirm: () => {},
+  confirmLabel: 'Ya',
+  cancelLabel: 'Batal',
+};
+
 export default function PenilaianDataPage() {
   const router = useRouter();
 
@@ -25,15 +37,12 @@ export default function PenilaianDataPage() {
   const [validasi1, setValidasi1] = useState<ApiDeadline | null>(null);
   const [validasi2, setValidasi2] = useState<ApiDeadline | null>(null);
 
-  // State modal
+  // 3. Tambahkan state isSaving
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // 4. Perbarui state modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
-    title: '',
-    message: '',
-    variant: 'warning' as 'success' | 'warning' | 'danger',
-    showButtons: true,
-    onConfirm: () => {},
-  });
+  const [modalConfig, setModalConfig] = useState(INITIAL_MODAL_CONFIG);
 
   const [selectedDlh, setSelectedDlh] = useState<string>('');
 
@@ -61,8 +70,21 @@ export default function PenilaianDataPage() {
     fetchDeadlines();
   }, []);
 
+  // 5. Buat fungsi closeModal dan resetModalConfig
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const resetModalConfig = () => {
+    setModalConfig(INITIAL_MODAL_CONFIG);
+  };
+
   // Handler untuk menyimpan deadline
   const handleSave = async (deadlineData: ApiDeadline | null, newStartDate: string, newEndDate: string, jenis: DeadlineType) => {
+    // 6. Cek dan set isSaving
+    if (isSaving) return;
+    setIsSaving(true);
+
     const formattedStart = newStartDate.split('/').reverse().join('-');
     const formattedEnd = newEndDate.split('/').reverse().join('-');
     const payload = { jenis_deadline: jenis, tanggal_mulai: formattedStart, tanggal_akhir: formattedEnd };
@@ -79,27 +101,36 @@ export default function PenilaianDataPage() {
         case 'Validasi 2': setValidasi2(response.data); break;
       }
 
-      // ✅ Modal Berhasil
+      // 7. ✅ Modal Berhasil (versi UniversalModal)
       setModalConfig({
         title: 'Deadline Berhasil Disimpan',
         message: `Deadline untuk ${jenis} telah berhasil disimpan.`,
         variant: 'success',
-        showButtons: false,
-        onConfirm: () => setIsModalOpen(false),
+        showCancelButton: false,
+        onConfirm: closeModal,
+        confirmLabel: 'OK',
+        cancelLabel: '', // tidak terpakai
       });
       setIsModalOpen(true);
+
     } catch (error) {
       console.error(`Gagal menyimpan deadline ${jenis}:`, error);
 
-      // ❌ Modal Gagal
+      // 8. ❌ Modal Gagal (versi UniversalModal)
       setModalConfig({
         title: 'Gagal Menyimpan Deadline',
         message: `Terjadi kesalahan saat menyimpan deadline untuk ${jenis}.`,
         variant: 'danger',
-        showButtons: false,
-        onConfirm: () => setIsModalOpen(false),
+        showCancelButton: false,
+        onConfirm: closeModal,
+        confirmLabel: 'Tutup',
+        cancelLabel: '', // tidak terpakai
       });
       setIsModalOpen(true);
+
+    } finally {
+      // 9. Selalu matikan isSaving
+      setIsSaving(false);
     }
   };
 
@@ -130,13 +161,17 @@ export default function PenilaianDataPage() {
             value={selectedDlh}
             onChange={(e) => setSelectedDlh(e.target.value)}
             className="bg-white px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            disabled={isSaving} // <-- 10. Tambah disabled
           >
             <option value="">Pilih Jenis DLH</option>
             <option value="provinsi">Provinsi</option>
             <option value="kabupaten">Kabupaten/Kota</option>
           </select>
         </div>
-        <button className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-4 rounded-md transition-colors">
+        <button 
+          className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSaving} // <-- 10. Tambah disabled
+        >
           Filter
         </button>
       </div>
@@ -144,49 +179,58 @@ export default function PenilaianDataPage() {
       {/* Kartu Deadline */}
       <h2 className="text-xl font-bold text-gray-800 pt-4">Pengaturan Deadline Penilaian</h2>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* 11. Tambahkan prop 'disabled' ke SEMUA card */}
         <DeadlineCard
           title="Penilaian SLHD"
           startDate={formatDate(penilaianSlhd?.tanggal_mulai)}
           endDate={formatDate(penilaianSlhd?.tanggal_akhir)}
           onSave={(start, end) => handleSave(penilaianSlhd, start, end, 'Penilaian SLHD')}
+          disabled={isSaving}
         />
         <DeadlineCard
           title="Penilaian Penghargaan"
           startDate={formatDate(penghargaan?.tanggal_mulai)}
           endDate={formatDate(penghargaan?.tanggal_akhir)}
           onSave={(start, end) => handleSave(penghargaan, start, end, 'Penilaian Penghargaan')}
+          disabled={isSaving}
         />
         <DeadlineCard
           title="Validasi 1"
           startDate={formatDate(validasi1?.tanggal_mulai)}
           endDate={formatDate(validasi1?.tanggal_akhir)}
           onSave={(start, end) => handleSave(validasi1, start, end, 'Validasi 1')}
+          disabled={isSaving}
         />
         <DeadlineCard
           title="Validasi 2"
           startDate={formatDate(validasi2?.tanggal_mulai)}
           endDate={formatDate(validasi2?.tanggal_akhir)}
           onSave={(start, end) => handleSave(validasi2, start, end, 'Validasi 2')}
+          disabled={isSaving}
         />
       </div>
 
       {/* Tombol Edit */}
       <button
         onClick={handleEditClick}
-        className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-6 rounded-md transition-colors"
+        className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isSaving} // <-- 10. Tambah disabled
       >
         Edit Deadline
       </button>
 
-      {/* Modal Konfirmasi */}
-      <ConfirmationModal
+      {/* 12. Ganti ke UniversalModal */}
+      <UniversalModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
+        onExitComplete={resetModalConfig} // <-- Kunci reset animasi
         title={modalConfig.title}
         message={modalConfig.message}
         variant={modalConfig.variant}
-        showButtons={modalConfig.showButtons}
+        showCancelButton={modalConfig.showCancelButton} // <-- Prop baru
         onConfirm={modalConfig.onConfirm}
+        confirmLabel={modalConfig.confirmLabel} // <-- Prop baru
+        cancelLabel={modalConfig.cancelLabel}   // <-- Prop baru
       />
     </div>
   );

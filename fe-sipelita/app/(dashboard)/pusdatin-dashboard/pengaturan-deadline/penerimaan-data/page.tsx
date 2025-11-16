@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DeadlineCard from '@/components/DeadlineCard';
-import ConfirmationModal from '@/components/ConfirmationModal'; // ← versi baru sudah terpasang
+// 1. Ganti ke UniversalModal
+import UniversalModal from '@/components/UniversalModal';
 import axios from '@/lib/axios';
 
 // Tipe data deadline yang diterima dari API
@@ -14,24 +15,30 @@ interface ApiDeadline {
   tanggal_akhir: string;  // Format YYYY-MM-DD
 }
 
+// 2. Buat state awal (untuk reset)
+const INITIAL_MODAL_CONFIG = {
+  title: '',
+  message: '',
+  variant: 'warning' as 'success' | 'warning' | 'danger',
+  showCancelButton: true,
+  onConfirm: () => {},
+  confirmLabel: 'Ya',
+  cancelLabel: 'Kembali',
+};
+
 export default function PenerimaanDataPage() {
   const router = useRouter();
   
   const [slhdDeadline, setSlhdDeadline] = useState<ApiDeadline | null>(null);
   const [iklhDeadline, setIklhDeadline] = useState<ApiDeadline | null>(null);
-  const [selectedDlh, setSelectedDlh] = useState<string>(''); // State untuk filter
+  const [selectedDlh, setSelectedDlh] = useState<string>('');
   
+  // 3. Gunakan state awal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({
-    title: '',
-    message: '',
-    variant: 'warning' as 'success' | 'warning' | 'danger',
-    showButtons: true,
-    onConfirm: () => {},
-    confirmLabel: 'Ya',
-    cancelLabel: 'Kembali',
-    confirmActionLabel: undefined as string | undefined,
-  });
+  const [modalConfig, setModalConfig] = useState(INITIAL_MODAL_CONFIG);
+  
+  // 4. Tambahkan state isSaving (isSubmitting)
+  const [isSaving, setIsSaving] = useState(false);
 
   const formatDate = (dateString: string | null | undefined): string => {
     if (!dateString) return '';
@@ -52,12 +59,27 @@ export default function PenerimaanDataPage() {
     fetchDeadlines();
   }, []);
 
+  // 5. Buat fungsi closeModal dan resetModalConfig
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+  
+  const resetModalConfig = () => {
+    setModalConfig(INITIAL_MODAL_CONFIG);
+  }
+
   const handleSave = async (
     deadlineData: ApiDeadline | null,
     newStartDate: string,
     newEndDate: string,
     jenis: 'Dokumen SLHD' | 'Nilai IKLH'
   ) => {
+    // 6. Cek isSaving
+    if (isSaving) return;
+    
+    // 7. Set isSaving
+    setIsSaving(true);
+
     const formattedStart = newStartDate.split('/').reverse().join('-');
     const formattedEnd = newEndDate.split('/').reverse().join('-');
 
@@ -81,30 +103,36 @@ export default function PenerimaanDataPage() {
         setIklhDeadline(response.data);
       }
 
+      // 8. Update Modal Config (gunakan showCancelButton & closeModal)
       setModalConfig({
         title: 'Berhasil',
         message: 'Deadline berhasil disimpan.',
         variant: 'success',
-        showButtons: false,
-        onConfirm: () => setIsModalOpen(false),
+        showCancelButton: false, // <-- Diperbarui
+        onConfirm: closeModal,      // <-- Diperbarui
         confirmLabel: 'Oke',
         cancelLabel: 'Tutup',
-        confirmActionLabel: undefined,
       });
       setIsModalOpen(true);
+      
     } catch (error) {
       console.error(`Gagal menyimpan deadline ${jenis}:`, error);
+      
+      // 9. Update Modal Config (gunakan showCancelButton & closeModal)
       setModalConfig({
         title: 'Gagal',
         message: 'Gagal menyimpan deadline.',
         variant: 'danger',
-        showButtons: false,
-        onConfirm: () => setIsModalOpen(false),
+        showCancelButton: false, // <-- Diperbarui
+        onConfirm: closeModal,      // <-- Diperbarui
         confirmLabel: 'Tutup',
         cancelLabel: '',
-        confirmActionLabel: undefined,
       });
       setIsModalOpen(true);
+      
+    } finally {
+      // 10. Selalu matikan isSaving
+      setIsSaving(false);
     }
   };
 
@@ -140,13 +168,17 @@ export default function PenerimaanDataPage() {
             value={selectedDlh}
             onChange={handleFilterChange}
             className="bg-white px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            disabled={isSaving} // <-- Tambahkan disabled
           >
             <option value="">Pilih Jenis DLH</option>
             <option value="provinsi">Provinsi</option>
             <option value="kabupaten">Kabupaten/Kota</option>
           </select>
         </div>
-        <button className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-4 rounded-md transition-colors">
+        <button 
+          className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSaving} // <-- Tambahkan disabled
+        >
           Filter
         </button>
       </div>
@@ -155,41 +187,44 @@ export default function PenerimaanDataPage() {
         Pengaturan Deadline Penerimaan Dokumen
       </h2>
 
-      {/* Kartu Deadline */}
+      {/* 11. Kirim 'disabled' ke DeadlineCard */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <DeadlineCard
           title="Dokumen SLHD"
           startDate={formatDate(slhdDeadline?.tanggal_mulai)}
           endDate={formatDate(slhdDeadline?.tanggal_akhir)}
           onSave={(start, end) => handleSave(slhdDeadline, start, end, 'Dokumen SLHD')}
+          disabled={isSaving} // <-- TAMBAHKAN INI
         />
         <DeadlineCard
           title="Nilai IKLH"
           startDate={formatDate(iklhDeadline?.tanggal_mulai)}
           endDate={formatDate(iklhDeadline?.tanggal_akhir)}
           onSave={(start, end) => handleSave(iklhDeadline, start, end, 'Nilai IKLH')}
+          disabled={isSaving} // <-- TAMBAHKAN INI
         />
       </div>
 
       <button
         onClick={handleEditClick}
-        className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-6 rounded-md transition-colors"
+        className="bg-[#00A86B] hover:bg-[#00945F] text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isSaving} // <-- TAMBAHKAN INI
       >
         Edit Deadline
       </button>
 
-      {/* Modal dengan properti baru */}
-      <ConfirmationModal
+      {/* 12. Ganti ke UniversalModal dan tambahkan onExitComplete */}
+      <UniversalModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeModal}
+        onExitComplete={resetModalConfig} // <-- KUNCI RESET ANIMASI
         title={modalConfig.title}
         message={modalConfig.message}
         variant={modalConfig.variant}
-        showButtons={modalConfig.showButtons}
+        showCancelButton={modalConfig.showCancelButton} // <-- Prop baru
         onConfirm={modalConfig.onConfirm}
         confirmLabel={modalConfig.confirmLabel}
         cancelLabel={modalConfig.cancelLabel}
-        confirmActionLabel={modalConfig.confirmActionLabel}
       />
     </div>
   );

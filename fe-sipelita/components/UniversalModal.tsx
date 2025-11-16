@@ -4,16 +4,19 @@ import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
-export interface ConfirmationModalProps {
+export interface UniversalModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   message: string;
   variant: 'success' | 'warning' | 'danger';
-  showButtons?: boolean;
+  showCancelButton?: boolean;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm?: () => void;
+  
+  /** Dijalankan setelah animasi exit selesai */
+  onExitComplete?: () => void; // <-- TAMBAHKAN INI
 }
 
 const iconMap = {
@@ -28,7 +31,7 @@ const variantConfig = {
     buttonColor: 'bg-green-600 hover:bg-green-700',
   },
   warning: {
-    iconColor: 'text-yellow-500', 
+    iconColor: 'text-yellow-500',
     buttonColor: 'bg-yellow-600 hover:bg-yellow-700',
   },
   danger: {
@@ -37,17 +40,18 @@ const variantConfig = {
   },
 };
 
-export default function ConfirmationModal({
+export default function UniversalModal({
   isOpen,
   onClose,
   title,
   message,
   variant,
-  showButtons = true,
+  showCancelButton = true,
   confirmLabel = "Ya",
   cancelLabel = "Batal",
   onConfirm,
-}: ConfirmationModalProps) {
+  onExitComplete, // <-- AMBIL INI
+}: UniversalModalProps) {
   const IconComponent = iconMap[variant];
   const config = variantConfig[variant];
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
@@ -60,7 +64,11 @@ export default function ConfirmationModal({
 
   const handleConfirm = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onConfirm?.();
+    if (onConfirm) {
+      onConfirm();
+    } else {
+      onClose();
+    }
   };
 
   const handleCancel = (e: React.MouseEvent) => {
@@ -75,7 +83,7 @@ export default function ConfirmationModal({
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExitComplete}> {/* <-- GUNAKAN DI SINI */}
       {isOpen && (
         <motion.div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -117,30 +125,33 @@ export default function ConfirmationModal({
                 {message}
               </p>
             </motion.div>
-
-            {showButtons && (
-              <motion.div 
-                className="flex gap-3 justify-center"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
+            
+            <motion.div 
+              className="flex gap-3 justify-center"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {showCancelButton && (
                 <button
                   onClick={handleCancel}
                   className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium flex-1 max-w-32"
                 >
                   {cancelLabel}
                 </button>
-
-                <button
-                  ref={confirmButtonRef}
-                  onClick={handleConfirm}
-                  className={`px-5 py-2.5 rounded-lg text-white font-medium transition-colors flex-1 max-w-32 ${config.buttonColor}`}
-                >
-                  {confirmLabel}
-                </button>
-              </motion.div>
-            )}
+              )}
+              <button
+                ref={confirmButtonRef}
+                onClick={handleConfirm}
+                className={`px-5 py-2.5 rounded-lg text-white font-medium transition-colors ${config.buttonColor} ${
+                  showCancelButton 
+                    ? 'flex-1 max-w-32' 
+                    : 'min-w-24' 
+                }`}
+              >
+                {confirmLabel}
+              </button>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}

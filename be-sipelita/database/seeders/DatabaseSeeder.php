@@ -19,8 +19,11 @@ class DatabaseSeeder extends Seeder
             JenisDlhSeeder::class,
             ProvinceSeeder::class,
             RegencySeeder::class,
+            FixRegenciesAndUsersProvinceIdSeeder::class,
             UserSeeder::class,
+            PendingUserSeeder::class,
             DeadlineSeeder::class,
+            
         ]);
     }
 }

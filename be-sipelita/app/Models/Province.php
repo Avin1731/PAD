@@ -9,9 +9,22 @@ class Province extends Model
 {
     use HasFactory;
 
-    // --- TAMBAHKAN 3 BARIS INI ---
     public $incrementing = false;
     protected $keyType = 'string';
     public $timestamps = false;
-    // --- AKHIR TAMBAHAN ---
+
+    // ✅ TAMBAH INI
+    protected $fillable = ['id', 'name'];
+
+    // ✅ TAMBAH INI - Relasi ke Regency
+    public function regencies()
+    {
+        return $this->hasMany(Regency::class, 'province_id', 'id');
+    }
+
+    // ✅ OPSIONAL - Relasi ke User
+    public function users()
+    {
+        return $this->hasMany(User::class, 'province_id', 'id');
+    }
 }
