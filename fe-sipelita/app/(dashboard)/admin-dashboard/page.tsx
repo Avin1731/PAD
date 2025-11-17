@@ -10,11 +10,11 @@ export default function AdminDashboardPage() {
 
   // Statistik utama
   const stats = [
-    { title: 'Total User DLH Provinsi Aktif', value: '38/34', link: '/admin-dashboard/users/aktif' },
-    { title: 'Total User DLH Kab/Kota Aktif', value: '514/450', link: '/admin-dashboard/users/aktif' },
-    { title: 'Total User Pusdatin Aktif', value: '5', link: '/admin-dashboard/users/aktif' },
+    { title: 'Total DLH Provinsi Aktif', value: '38/34', link: '/admin-dashboard/users/aktif' },
+    { title: 'Total DLH Kab/Kota Aktif', value: '514/450', link: '/admin-dashboard/users/aktif' },
+    { title: 'Total Pusdatin Aktif', value: '5', link: '/admin-dashboard/users/aktif' },
     { title: 'Total Admin Aktif', value: '4', link: '/admin-dashboard/users/aktif' },
-    { title: 'Akun DLH Baru Menunggu', value: '3', link: '/admin-dashboard/users/pending' },
+    { title: 'Akun DLH Pending', value: '3', link: '/admin-dashboard/users/pending' },
   ];
 
   // 🎨 Warna per-card
@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
 
       {/* Aktivitas terakhir */}
       <section>
-        <LastActivityCard logs={recentLogs} />
+        <LastActivityCard logs={recentLogs} theme="red" />
       </section>
     </div>
   );

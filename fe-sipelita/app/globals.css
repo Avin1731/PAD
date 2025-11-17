@@ -43,6 +43,36 @@
 }
 .animate-popGlass { animation: popGlass .4s ease }
 
+/* Kombinasi Bounce + Tilt + Vibrate */
+@keyframes bounce-vibrate {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  10% {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+  20% {
+    transform: translateY(0) rotate(2deg);
+  }
+  30% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  40% {
+    transform: translateY(0) rotate(1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0deg);
+  }
+  60%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.animate-bounce-vibrate {
+  animation: bounce-vibrate 1.8s ease-in-out infinite;
+}
+
+
 
 body {
   /* 1. Ubah warna dasar menjadi PUTIH BERSIH */

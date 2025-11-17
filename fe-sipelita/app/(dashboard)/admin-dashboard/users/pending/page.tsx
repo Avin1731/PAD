@@ -234,7 +234,7 @@ export default function UsersPendingPage() {
     <div className="p-8 space-y-8">
       
       <header>
-        <h1 className="text-3xl font-extrabold text-gray-800">Manajemen Pengguna Pending</h1>
+        <h1 className="text-3xl font-extrabold text-yellow-800">Manajemen Pengguna Pending</h1>
         <p className="text-gray-600">Daftar pengguna DLH yang menunggu persetujuan admin.</p>
       </header>
 
