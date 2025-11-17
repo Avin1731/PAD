@@ -1,12 +1,19 @@
-// src/app/lupa-password/page.tsx
-import UnderConstructionPage from "@/components/UnderConstructionPage";
+// app/some-page/page.tsx
+import UnderConstructionModal from "@/components/UnderConstructionModal";
 
-export default function LupaPasswordPage() {
+export default function Page() {
   return (
-    <UnderConstructionPage
-      title="Lupa Password"
-      message="Fitur ini sedang dalam pengembangan. Untuk saat ini, silakan hubungi Admin untuk me-reset password Anda."
-      // Hapus buttonText dan buttonHref
-    />
+    <>
+      <div className="p-10">
+        {/* Konten halaman boleh ada di sini */}
+        <h1 className="text-xl font-bold">Under Construction</h1>
+      </div>
+
+      {/* Modal muncul otomatis */}
+      <UnderConstructionModal
+        title="Sedang Dalam Pengembangan"
+        message="Fitur ini belum tersedia saat ini."
+      />
+    </>
   );
 }

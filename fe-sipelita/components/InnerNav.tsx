@@ -8,12 +8,70 @@ interface InnerNavProps {
   activeTab: string;
   onChange: (value: string) => void;
   className?: string;
+  activeColor?: 'slate' | 'blue' | 'green' | 'red';
 }
 
-export default function InnerNav({ tabs, activeTab, onChange, className = '' }: InnerNavProps) {
+export default function InnerNav({ 
+  tabs, 
+  activeTab, 
+  onChange, 
+  className = '',
+  activeColor
+}: InnerNavProps) {
   // Helper untuk mendapatkan warna dan icon berdasarkan tab value
   const getTabConfig = (tabValue: string) => {
+    // Gunakan activeColor hanya untuk tab yang aktif, untuk tab lainnya gunakan logika normal
+    const isActive = activeTab === tabValue;
+    
+    if (isActive && activeColor) {
+      // Jika tab aktif DAN ada activeColor prop, gunakan activeColor
+      switch(activeColor) {
+        case 'slate':
+          return {
+            activeBorder: 'border-slate-500',
+            activeText: 'text-slate-600',
+            hoverBorder: 'hover:border-slate-300',
+            hoverText: 'hover:text-slate-700',
+            icon: null
+          };
+        case 'blue':
+          return {
+            activeBorder: 'border-blue-500',
+            activeText: 'text-blue-600',
+            hoverBorder: 'hover:border-blue-300',
+            hoverText: 'hover:text-blue-700',
+            icon: <FaUserTie className="text-blue-600 text-base" />
+          };
+        case 'green':
+          return {
+            activeBorder: 'border-green-500',
+            activeText: 'text-green-600', 
+            hoverBorder: 'hover:border-green-300',
+            hoverText: 'hover:text-green-700',
+            icon: <FaUserCog className="text-green-600 text-base" />
+          };
+        case 'red':
+          return {
+            activeBorder: 'border-red-500',
+            activeText: 'text-red-600',
+            hoverBorder: 'hover:border-red-300',
+            hoverText: 'hover:text-red-700',
+            icon: <FaUserShield className="text-red-600 text-base" />
+          };
+      }
+    }
+
+    // Untuk tab tidak aktif, atau jika tidak ada activeColor, gunakan logika original
     switch(tabValue.toLowerCase()) {
+      case 'all':
+      case 'semua':
+        return {
+          activeBorder: 'border-slate-500',
+          activeText: 'text-slate-600',
+          hoverBorder: 'hover:border-slate-300',
+          hoverText: 'hover:text-slate-700',
+          icon: null
+        };
       case 'dlh':
       case 'provinsi':
       case 'kabkota':

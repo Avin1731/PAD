@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
         $defaultPassword = Hash::make('password');
 
         // --- BUAT 100 ADMIN ---
-        for ($i = 1; $i <= 100; $i++) {
+        for ($i = 1; $i <= 5; $i++) {
             User::create([
                 'name' => "Admin {$i}",
                 'email' => "admin{$i}@sipelita.com",
@@ -57,7 +57,7 @@ class UserSeeder extends Seeder
         }
 
         // --- BUAT 100 DLH PROVINSI ---
-        for ($i = 1; $i <= 100; $i++) {
+        for ($i = 1; $i <= 30; $i++) {
             $randomProvince = $provinces->random();
 
             User::create([

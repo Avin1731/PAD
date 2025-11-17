@@ -32,7 +32,7 @@ class PendingUserSeeder extends Seeder
         }
 
         // --- BUAT 35 PENGGUNA PENDING (DLH PROVINSI) ---
-        $provinces->random(35)->each(function ($province) use ($dlhRole, $provinsiDlh) {
+        $provinces->random(5)->each(function ($province) use ($dlhRole, $provinsiDlh) {
             User::factory()
                 ->pending() // Gunakan state pending()
                 ->create([
@@ -47,7 +47,7 @@ class PendingUserSeeder extends Seeder
 
 
         // --- BUAT 45 PENGGUNA PENDING (DLH KAB/KOTA) ---
-        $regencies->random(45)->each(function ($regency) use ($dlhRole, $kabKotaDlh) {
+        $regencies->random(5)->each(function ($regency) use ($dlhRole, $kabKotaDlh) {
             User::factory()
                 ->pending() // Gunakan state pending()
                 ->create([

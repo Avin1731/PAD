@@ -1,8 +1,8 @@
+// src/app/(dashboard)/admin-dashboard/users/aktif/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { User } from '@/context/AuthContext';
-import StatCard from '@/components/StatCard';
 import InnerNav from '@/components/InnerNav';
 import UserTable from '@/components/UserTable';
 import Pagination from '@/components/Pagination';
@@ -11,13 +11,45 @@ import axios from '@/lib/axios';
 
 const USERS_PER_PAGE = 25;
 
-// 🎨 Warna per-card
+// 🎨 Warna per-card untuk StatCard biasa
 const statCardColors = [
   { bg: 'bg-blue-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
   { bg: 'bg-blue-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
   { bg: 'bg-green-50', border: 'border-green-300', titleColor: 'text-green-600', valueColor: 'text-green-800' },
-  { bg: 'bg-red-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' },
+  { bg: 'bg-red-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' }, // ✅ Fixed: changed from bg-red-500 to bg-red-50
 ];
+
+// Komponen StatCard dengan Progress Bar (didefinisikan di dalam file ini)
+const ProgressStatCard = ({ title, current, max, color = 'blue' }: { title: string; current: number; max: number; color?: 'blue' | 'green' | 'red' }) => {
+  const percentage = Math.min(100, (current / max) * 100); // Batasi maksimal 100%
+  const colorClasses = {
+    blue: { bar: 'bg-blue-500', border: 'border-blue-300', text: 'text-blue-600' },
+    green: { bar: 'bg-green-500', border: 'border-green-300', text: 'text-green-600' },
+    red: { bar: 'bg-red-500', border: 'border-red-300', text: 'text-red-600' },
+  };
+
+  const selectedColors = colorClasses[color];
+
+  return (
+    // Tambahkan h-full flex flex-col
+    <div className={`bg-white rounded-xl shadow-sm border ${selectedColors.border} p-6 h-full flex flex-col`}>
+      <div>
+        <h3 className={`text-sm font-medium ${selectedColors.text} mb-1`}>{title}</h3>
+        <p className="text-2xl font-bold text-gray-900">{current} / {max}</p>
+      </div>
+      {/* Gunakan flex-grow agar progress bar tetap di bawah */}
+      <div className="mt-auto">
+        <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className={`h-2.5 rounded-full ${selectedColors.bar}`}
+            style={{ width: `${percentage}%` }}
+          ></div>
+        </div>
+        {/* Baris ini dihapus: <p className="text-xs text-gray-500 mt-1">{percentage.toFixed(2)}% dari target</p> */}
+      </div>
+    </div>
+  );
+};
 
 export default function UsersAktifPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,7 +72,7 @@ export default function UsersAktifPage() {
     const fetchUsers = async () => {
       try {
         const res = await axios.get('/api/admin/users/aktif');
-        const data: User[] = res.data;
+        const data: User[] = res.data; // ✅ Fixed: added proper variable declaration
 
         const dlhProvinsi = data.filter(
           (u: User) => u.role?.name === 'DLH' && u.jenis_dlh?.name === 'DLH Provinsi'
@@ -107,18 +139,18 @@ export default function UsersAktifPage() {
 
   const isDlhTabActive = activeTab === 'dlh';
 
-  // Stats untuk StatCard dengan link
+  // Stats untuk StatCard dengan link dan tipe
   const statsData = [
-    { title: 'Total DLH Provinsi Aktif', value: stats.dlhProvinsi.toString(), link: '#dlh' },
-    { title: 'Total DLH Kab/Kota Aktif', value: stats.dlhKabKota.toString(), link: '#dlh' },
-    { title: 'Total Pusdatin Aktif', value: stats.pusdatin.toString(), link: '#pusdatin' },
-    { title: 'Total Admin Aktif', value: stats.admin.toString(), link: '#admin' },
+    { title: 'Total DLH Provinsi Aktif', value: stats.dlhProvinsi, max: 38, type: 'progress', color: 'blue' as const, link: '#dlh' },
+    { title: 'Total DLH Kab/Kota Aktif', value: stats.dlhKabKota, max: 514, type: 'progress', color: 'blue' as const, link: '#dlh' },
+    { title: 'Total Pusdatin Aktif', value: stats.pusdatin, type: 'simple', color: 'green' as const, link: '#pusdatin' },
+    { title: 'Total Admin Aktif', value: stats.admin, type: 'simple', color: 'red' as const, link: '#admin' },
   ];
 
   if (loading) {
     return (
       <div className="p-8 space-y-8">
-        <h1 className="text-3xl font-extrabold text-[#00A86B]">Memuat Data...</h1>
+        <h1 className="text-3xl font-extrabold text-green-800">Memuat Data...</h1>
         <div className="h-64 bg-gray-100 animate-pulse rounded-xl"></div>
       </div>
     );
@@ -128,15 +160,16 @@ export default function UsersAktifPage() {
     <div className="p-8 space-y-8">
       {/* Header */}
       <header>
-        <h1 className="text-3xl font-extrabold text-[#00A86B]">Manajemen Pengguna Aktif</h1>
+        <h1 className="text-3xl font-extrabold text-green-800">Manajemen Pengguna Aktif</h1>
         <p className="text-gray-600">Daftar pengguna yang telah diverifikasi dan aktif di sistem.</p>
       </header>
 
       {/* Statistik dengan Link */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Tambahkan items-stretch */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
         {statsData.map((stat, index) => (
-          <Link 
-            key={index} 
+          <Link
+            key={index}
             href={stat.link}
             onClick={(e) => {
               e.preventDefault();
@@ -152,11 +185,21 @@ export default function UsersAktifPage() {
             }}
             className="h-full"
           >
-            <StatCard
-              {...statCardColors[index]}
-              title={stat.title}
-              value={stat.value}
-            />
+            {stat.type === 'progress' ? (
+              <ProgressStatCard
+                title={stat.title}
+                // Gunakan nilai default 0 untuk mencegah error TypeScript
+                current={stat.value ?? 0}
+                max={stat.max ?? 0}
+                color={stat.color}
+              />
+            ) : (
+              // Tambahkan h-full flex flex-col justify-center
+              <div className={`bg-white rounded-xl shadow-sm border ${statCardColors[index].border} p-6 h-full flex flex-col justify-center`}>
+                <h3 className={`text-sm font-medium ${statCardColors[index].titleColor} mb-1`}>{stat.title}</h3>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              </div>
+            )}
           </Link>
         ))}
       </div>

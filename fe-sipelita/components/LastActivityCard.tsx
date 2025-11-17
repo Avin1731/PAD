@@ -1,20 +1,64 @@
+// src/components/LastActivityCard.tsx
 'use client';
 
 import { FaUserShield, FaUserTie, FaUserCog } from "react-icons/fa";
 
+// Ekspor interface Log agar bisa digunakan di file lain
 export interface Log {
   id: number;
   user: string;
   action: string;
   timestamp: string;
   role: 'dlh' | 'pusdatin' | 'admin';
+  jenis_dlh?: 'provinsi' | 'kabkota';
+  province_name?: string;
+  regency_name?: string;
 }
 
 interface LastActivityCardProps {
   logs: Log[];
+  showDlhSpecificColumns?: boolean;
+  theme?: 'slate' | 'blue' | 'green' | 'red';
 }
 
-export default function LastActivityCard({ logs }: LastActivityCardProps) {
+export default function LastActivityCard({ 
+  logs, 
+  showDlhSpecificColumns = false, 
+  theme = 'slate' 
+}: LastActivityCardProps) {
+  
+  // Fungsi untuk mendapatkan warna berdasarkan tema
+  const getThemeColors = () => {
+    switch (theme) {
+      case 'blue':
+        return {
+          header: 'bg-blue-200',
+          row: 'bg-blue-50',
+          text: 'text-blue-800'
+        };
+      case 'green':
+        return {
+          header: 'bg-green-200',
+          row: 'bg-green-50',
+          text: 'text-green-800'
+        };
+      case 'red':
+        return {
+          header: 'bg-red-200',
+          row: 'bg-red-50',
+          text: 'text-red-800'
+        };
+      default: // slate
+        return {
+          header: 'bg-slate-200',
+          row: 'bg-slate-50',
+          text: 'text-slate-800'
+        };
+    }
+  };
+
+  const themeColors = getThemeColors();
+
   return (
     <div>
       {/* Header di Luar Card */}
@@ -29,12 +73,19 @@ export default function LastActivityCard({ logs }: LastActivityCardProps) {
         <div className="overflow-x-auto">
           <table className="w-full">
 
-            {/* Header dengan MERAH */}
-            <thead className="bg-red-200">
+            {/* Header dengan tema dinamis */}
+            <thead className={themeColors.header}>
               <tr>
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Waktu</th>
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">User</th>
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Role</th>
+                {showDlhSpecificColumns && (
+                  <>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Jenis DLH</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Provinsi</th>
+                    <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Kab/Kota</th>
+                  </>
+                )}
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
@@ -43,22 +94,37 @@ export default function LastActivityCard({ logs }: LastActivityCardProps) {
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50">
 
-                  {/* Row dengan background merah muda */}
-                  <td className="bg-red-50 py-4 px-4 text-sm text-gray-600 w-24">[{log.timestamp}]</td>
+                  {/* Row dengan background sesuai tema */}
+                  <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-600 w-24`}>[{log.timestamp}]</td>
 
-                  <td className="bg-red-50 py-4 px-4 text-sm text-gray-800 font-medium">
+                  <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-800 font-medium`}>
                     {log.user}
                   </td>
 
                   {/* Role + Icon */}
-                  <td className="bg-red-50 py-4 px-4 text-sm font-medium flex items-center gap-2">
+                  <td className={`${themeColors.row} py-4 px-4 text-sm font-medium flex items-center gap-2`}>
                     {getRoleIcon(log.role)}
                     <span className={getRoleColor(log.role)}>
                       {log.role.toUpperCase()}
                     </span>
                   </td>
 
-                  <td className="bg-red-50 py-4 px-4 text-sm text-gray-700">
+                  {showDlhSpecificColumns && (
+                    <>
+                      <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
+                        {log.jenis_dlh === 'provinsi' ? 'Provinsi' : 
+                         log.jenis_dlh === 'kabkota' ? 'Kab/Kota' : '-'}
+                      </td>
+                      <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
+                        {log.province_name || '-'}
+                      </td>
+                      <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
+                        {log.regency_name || '-'}
+                      </td>
+                    </>
+                  )}
+
+                  <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
                     {log.action}
                   </td>
 
