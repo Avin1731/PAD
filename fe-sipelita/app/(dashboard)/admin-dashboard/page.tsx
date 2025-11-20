@@ -1,79 +1,112 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect } from 'react';
 import StatCard from '@/components/StatCard';
-import LastActivityCard, { Log } from '@/components/LastActivityCard';
 import Link from 'next/link';
+import axios from '@/lib/axios';
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    total_users_aktif: 0,
+    total_users_pending: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Statistik utama
-  const stats = [
-    { title: 'Total DLH Provinsi Aktif', value: '38/34', link: '/admin-dashboard/users/aktif' },
-    { title: 'Total DLH Kab/Kota Aktif', value: '514/450', link: '/admin-dashboard/users/aktif' },
-    { title: 'Total Pusdatin Aktif', value: '5', link: '/admin-dashboard/users/aktif' },
-    { title: 'Total Admin Aktif', value: '4', link: '/admin-dashboard/users/aktif' },
-    { title: 'Akun DLH Pending', value: '3', link: '/admin-dashboard/users/pending' },
-  ];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get('/api/admin/dashboard');
+        setStats(res.data);
+      } catch (error) {
+        console.error('Gagal mengambil statistik dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // 🎨 Warna per-card
-  const colors = [
-    { bg: 'bg-gray-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
-    { bg: 'bg-gray-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
-    { bg: 'bg-gray-50', border: 'border-green-300', titleColor: 'text-green-600', valueColor: 'text-green-800' },
-    { bg: 'bg-gray-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' },
-    { bg: 'bg-gray-50', border: 'border-yellow-300', titleColor: 'text-yellow-600', valueColor: 'text-yellow-800' },
-  ];
+    fetchStats();
+  }, []);
 
-  // Log terakhir
-  const recentLogs: Log[] = [
-    { id: 1, user: 'DLH Kota Bogor', action: 'upload dokumen SLHD.', timestamp: '09:15', role: 'dlh' },
-    { id: 2, user: 'DLH Provinsi Jawa Barat', action: 'ganti file IKLH.', timestamp: '09:00', role: 'dlh' },
-    { id: 3, user: 'Pusdatin A', action: 'atur deadline penilaian data.', timestamp: '08:50', role: 'pusdatin' },
-    { id: 4, user: 'Pusdatin B', action: 'atur deadline penerimaan data.', timestamp: '08:45', role: 'pusdatin' },
-    { id: 5, user: 'Admin Satu', action: 'hapus akun DLH Kabupaten Malang.', timestamp: '08:30', role: 'admin' },
-    { id: 6, user: 'Admin Dua', action: 'approve DLH Provinsi Aceh.', timestamp: '08:25', role: 'admin' },
-    { id: 7, user: 'DLH Kabupaten Bandung', action: 'upload IKLH.', timestamp: '08:20', role: 'dlh' },
-    { id: 8, user: 'Pusdatin C', action: 'lihat dashboard.', timestamp: '08:15', role: 'pusdatin' },
-    { id: 9, user: 'Admin Tiga', action: 'buat akun pusdatin baru.', timestamp: '08:10', role: 'admin' },
-    { id: 10, user: 'DLH Provinsi Banten', action: 'logout.', timestamp: '08:05', role: 'dlh' },
-  ];
+  if (loading) {
+    return (
+      <div className="p-8 space-y-8">
+        <h1 className="text-3xl font-extrabold text-gray-800">Dashboard Admin</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-32 bg-gray-100 animate-pulse rounded-xl"></div>
+          <div className="h-32 bg-gray-100 animate-pulse rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="p-8 space-y-8">
       {/* Header */}
-      <header className="pb-4 border-b border-gray-200">
-        <h1 className="text-3xl font-extrabold text-red-700">
-          Dashboard Kontrol Utama, {user?.name || 'Admin'}
-        </h1>
-        <p className="text-gray-600">Fokus: Pengelolaan User dan Pengawasan Sistem.</p>
+      <header>
+        <h1 className="text-3xl font-extrabold text-gray-800">Dashboard Admin</h1>
+        <p className="text-gray-600 mt-1">Selamat datang kembali, Admin. Berikut ringkasan sistem saat ini.</p>
       </header>
 
-      {/* Statistik utama */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        {stats.map((stat, index) => {
-          const color = colors[index % colors.length];
+      {/* Statistik Ringkasan */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Kartu User Aktif */}
+        <Link 
+          href="/admin-dashboard/users/aktif"
+          className="block transition-transform hover:scale-105"
+        >
+          <StatCard
+            bgColor="bg-green-50"
+            borderColor="border-green-300"
+            titleColor="text-green-600"
+            valueColor="text-green-800"
+            title="Total User Aktif"
+            value={stats.total_users_aktif.toString()}
+          />
+        </Link>
 
-          return (
-            <Link key={index} href={stat.link} className="h-full">
-              <StatCard
-                title={stat.title}
-                value={stat.value}
-                bgColor={color.bg}
-                borderColor={color.border}
-                titleColor={color.titleColor}
-                valueColor={color.valueColor}
-              />
-            </Link>
-          );
-        })}
-      </section>
+        {/* Kartu User Pending */}
+        <Link 
+          href="/admin-dashboard/users/pending"
+          className="block transition-transform hover:scale-105"
+        >
+          <StatCard
+            bgColor="bg-yellow-50"
+            borderColor="border-yellow-300"
+            titleColor="text-yellow-600"
+            valueColor="text-yellow-800"
+            title="Menunggu Persetujuan (Pending)"
+            value={stats.total_users_pending.toString()}
+          />
+        </Link>
 
-      {/* Aktivitas terakhir */}
-      <section>
-        <LastActivityCard logs={recentLogs} theme="red" />
-      </section>
+      </div>
+
+      {/* Area Tambahan (Bisa diisi chart atau shortcut lain) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <Link 
+           href="/admin-dashboard/settings"
+           className="p-6 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition flex items-center justify-between group"
+        >
+           <div>
+             <h3 className="text-lg font-semibold text-gray-800 group-hover:text-green-600 transition-colors">Kelola Pusdatin</h3>
+             <p className="text-sm text-gray-500">Tambah atau hapus akun khusus Pusdatin.</p>
+           </div>
+           <span className="text-2xl text-gray-400 group-hover:text-green-500">&rarr;</span>
+        </Link>
+
+        <Link 
+           href="/admin-dashboard/users/logs"
+           className="p-6 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition flex items-center justify-between group"
+        >
+           <div>
+             <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">Lihat Log Aktivitas</h3>
+             <p className="text-sm text-gray-500">Pantau riwayat aktivitas pengguna di sistem.</p>
+           </div>
+           <span className="text-2xl text-gray-400 group-hover:text-blue-500">&rarr;</span>
+        </Link>
+      </div>
+
     </div>
   );
 }

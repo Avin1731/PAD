@@ -1,4 +1,3 @@
-// src/app/(dashboard)/admin-dashboard/users/logs/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,7 +19,6 @@ const statCardColors = [
   { bg: 'bg-red-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' },
 ];
 
-// Type untuk tab values
 type TabValue = 'all' | 'dlh' | 'pusdatin' | 'admin';
 type DlhTabValue = 'provinsi' | 'kabkota';
 
@@ -29,7 +27,7 @@ export default function UsersLogsPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State untuk tab (filter berdasarkan role)
+  // State untuk tab
   const [activeTab, setActiveTab] = useState<TabValue>('all');
   const [activeDlhTab, setActiveDlhTab] = useState<DlhTabValue>('provinsi');
 
@@ -47,9 +45,10 @@ export default function UsersLogsPage() {
     const fetchLogs = async () => {
       try {
         const res = await axios.get('/api/admin/logs');
-        const data: Log[] = res.data;
+        // Handle response: Laravel Resource biasanya membungkus data dalam properti 'data'
+        const data: Log[] = Array.isArray(res.data) ? res.data : res.data.data;
 
-        // Hitung statistik - URUTAN: Semua, DLH Prov, DLH Kab/Kota, Pusdatin, Admin
+        // Hitung statistik dari data yang diterima
         const totalLogs = data.length;
         const dlhProvinsiLogs = data.filter(log => log.role === 'dlh' && log.jenis_dlh === 'provinsi').length;
         const dlhKabKotaLogs = data.filter(log => log.role === 'dlh' && log.jenis_dlh === 'kabkota').length;
@@ -92,20 +91,18 @@ export default function UsersLogsPage() {
     return filteredLogs.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
-
   const handlePageChange = (page: number) => {
+    const totalPages = Math.ceil(filteredLogs.length / LOGS_PER_PAGE);
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
-  // Reset page ketika tab berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, activeDlhTab]);
 
-  // Tabs untuk filter role - URUTAN: Semua, DLH, Pusdatin, Admin
+  // Tabs Configuration
   const mainTabs: { label: string; value: TabValue }[] = [
     { label: 'Semua', value: 'all' },
     { label: 'DLH', value: 'dlh' },
@@ -120,41 +117,39 @@ export default function UsersLogsPage() {
 
   const isDlhTabActive = activeTab === 'dlh';
 
-  // Stats untuk StatCard dengan link - URUTAN: Semua, DLH Prov, DLH Kab/Kota, Pusdatin, Admin
   const statsData = [
     { 
       title: 'Total Log Aktivitas', 
       value: stats.totalLogs.toString(), 
-      link: '#all',
-      color: statCardColors[0]
+      link: '#all', 
+      color: statCardColors[0] 
     },
     { 
       title: 'Log DLH Provinsi', 
       value: stats.dlhProvinsiLogs.toString(), 
-      link: '#dlh-provinsi',
-      color: statCardColors[1]
+      link: '#dlh-provinsi', 
+      color: statCardColors[1] 
     },
     { 
       title: 'Log DLH Kab/Kota', 
       value: stats.dlhKabKotaLogs.toString(), 
-      link: '#dlh-kabkota',
-      color: statCardColors[2]
+      link: '#dlh-kabkota', 
+      color: statCardColors[2] 
     },
     { 
       title: 'Log Pusdatin', 
       value: stats.pusdatinLogs.toString(), 
-      link: '#pusdatin',
-      color: statCardColors[3]
+      link: '#pusdatin', 
+      color: statCardColors[3] 
     },
     { 
       title: 'Log Admin', 
       value: stats.adminLogs.toString(), 
-      link: '#admin',
-      color: statCardColors[4]
+      link: '#admin', 
+      color: statCardColors[4] 
     },
   ];
 
-  // Fungsi untuk mendapatkan warna tab berdasarkan value
   const getTabColor = (tabValue: TabValue) => {
     switch (tabValue) {
       case 'all': return 'slate';
@@ -168,7 +163,7 @@ export default function UsersLogsPage() {
   if (loading) {
     return (
       <div className="space-y-8 p-8">
-        <h1 className="text-3xl font-extrabold text-slate-800">Memuat Log...</h1>
+        <h1 className="text-3xl font-extrabold text-slate-500">Memuat Log...</h1>
         <div className="h-64 bg-gray-100 rounded-xl animate-pulse"></div>
       </div>
     );
@@ -176,13 +171,11 @@ export default function UsersLogsPage() {
 
   return (
     <div className="space-y-8 p-8">
-      {/* Header */}
       <header>
-        <h1 className="text-3xl font-extrabold text-slate-800">Log Aktivitas Pengguna</h1>
+        <h1 className="text-3xl font-extrabold text-slate-600">Log Aktivitas Pengguna</h1>
         <p className="text-gray-600">Catatan semua aktivitas yang dilakukan oleh pengguna di sistem.</p>
       </header>
 
-      {/* Statistik dengan Link - 5 CARDS SEJAJAR */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {statsData.map((stat, index) => (
           <Link 
@@ -190,20 +183,11 @@ export default function UsersLogsPage() {
             href={stat.link}
             onClick={(e) => {
               e.preventDefault();
-              // Set active tab berdasarkan link
-              if (stat.link === '#all') {
-                setActiveTab('all');
-              } else if (stat.link === '#dlh-provinsi') {
-                setActiveTab('dlh');
-                setActiveDlhTab('provinsi');
-              } else if (stat.link === '#dlh-kabkota') {
-                setActiveTab('dlh');
-                setActiveDlhTab('kabkota');
-              } else if (stat.link === '#pusdatin') {
-                setActiveTab('pusdatin');
-              } else if (stat.link === '#admin') {
-                setActiveTab('admin');
-              }
+              if (stat.link === '#all') setActiveTab('all');
+              else if (stat.link === '#dlh-provinsi') { setActiveTab('dlh'); setActiveDlhTab('provinsi'); }
+              else if (stat.link === '#dlh-kabkota') { setActiveTab('dlh'); setActiveDlhTab('kabkota'); }
+              else if (stat.link === '#pusdatin') setActiveTab('pusdatin');
+              else if (stat.link === '#admin') setActiveTab('admin');
             }}
             className="h-full block transition-transform hover:scale-105"
           >
@@ -219,7 +203,6 @@ export default function UsersLogsPage() {
         ))}
       </div>
 
-      {/* Main Tabs - URUTAN: Semua, DLH, Pusdatin, Admin */}
       <InnerNav 
         tabs={mainTabs} 
         activeTab={activeTab} 
@@ -227,7 +210,6 @@ export default function UsersLogsPage() {
         activeColor={getTabColor(activeTab)}
       />
 
-      {/* DLH Sub Tabs */}
       {isDlhTabActive && (
         <InnerNav
           tabs={dlhTabs}
@@ -238,7 +220,6 @@ export default function UsersLogsPage() {
         />
       )}
 
-      {/* Tabel Log - Gunakan LastActivityCard */}
       <LastActivityCard 
         logs={paginatedLogs()} 
         showDlhSpecificColumns={isDlhTabActive}
@@ -247,7 +228,6 @@ export default function UsersLogsPage() {
                activeTab === 'pusdatin' ? 'green' : 'red'}
       />
 
-      {/* Pagination Controls */}
       <div className="flex justify-between items-center mt-6">
         <span className="text-sm text-gray-600">
           Menampilkan {paginatedLogs().length} dari {filteredLogs.length} log
@@ -255,7 +235,7 @@ export default function UsersLogsPage() {
 
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={Math.ceil(filteredLogs.length / LOGS_PER_PAGE)}
           onPageChange={handlePageChange}
           siblings={1}
         />

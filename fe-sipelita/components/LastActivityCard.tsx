@@ -1,4 +1,3 @@
-// src/components/LastActivityCard.tsx
 'use client';
 
 import { FaUserShield, FaUserTie, FaUserCog } from "react-icons/fa";
@@ -7,10 +6,13 @@ import { FaUserShield, FaUserTie, FaUserCog } from "react-icons/fa";
 export interface Log {
   id: number;
   user: string;
-  action: string;
-  timestamp: string;
   role: 'dlh' | 'pusdatin' | 'admin';
-  jenis_dlh?: 'provinsi' | 'kabkota';
+  action: string;
+  target?: string; // Tambahan: Objek yang dikenai aksi
+  time: string;    // ✅ KITA GUNAKAN 'time'
+  status?: 'success' | 'warning' | 'danger' | 'info' | string;
+  // ✅ Izinkan undefined, jangan paksa string
+  jenis_dlh?: 'provinsi' | 'kabkota'; 
   province_name?: string;
   regency_name?: string;
 }
@@ -27,33 +29,12 @@ export default function LastActivityCard({
   theme = 'slate' 
 }: LastActivityCardProps) {
   
-  // Fungsi untuk mendapatkan warna berdasarkan tema
   const getThemeColors = () => {
     switch (theme) {
-      case 'blue':
-        return {
-          header: 'bg-blue-200',
-          row: 'bg-blue-50',
-          text: 'text-blue-800'
-        };
-      case 'green':
-        return {
-          header: 'bg-green-200',
-          row: 'bg-green-50',
-          text: 'text-green-800'
-        };
-      case 'red':
-        return {
-          header: 'bg-red-200',
-          row: 'bg-red-50',
-          text: 'text-red-800'
-        };
-      default: // slate
-        return {
-          header: 'bg-slate-200',
-          row: 'bg-slate-50',
-          text: 'text-slate-800'
-        };
+      case 'blue': return { header: 'bg-blue-200', row: 'bg-blue-50', text: 'text-blue-800' };
+      case 'green': return { header: 'bg-green-200', row: 'bg-green-50', text: 'text-green-800' };
+      case 'red': return { header: 'bg-red-200', row: 'bg-red-50', text: 'text-red-800' };
+      default: return { header: 'bg-slate-200', row: 'bg-slate-50', text: 'text-slate-800' };
     }
   };
 
@@ -61,24 +42,18 @@ export default function LastActivityCard({
 
   return (
     <div>
-      {/* Header di Luar Card */}
       <div className="px-6 py-3">
         <h3 className="text-xl font-bold text-gray-800 pl-0 -ml-4">Aktivitas Terakhir</h3>
       </div>
 
-      {/* Card */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-
-        {/* Tabel */}
         <div className="overflow-x-auto">
           <table className="w-full">
-
-            {/* Header dengan tema dinamis */}
             <thead className={themeColors.header}>
               <tr>
-                <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Waktu</th>
+                <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider w-32">Waktu</th>
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">User</th>
-                <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Role</th>
+                <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider w-32">Role</th>
                 {showDlhSpecificColumns && (
                   <>
                     <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Jenis DLH</th>
@@ -91,47 +66,68 @@ export default function LastActivityCard({
             </thead>
 
             <tbody className="divide-y divide-gray-200">
-              {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-gray-50">
+              {logs.length > 0 ? (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                    {/* Waktu */}
+                    <td className={`${themeColors.row} py-4 px-4 text-xs text-gray-500 font-medium`}>
+                      {log.time}
+                    </td>
 
-                  {/* Row dengan background sesuai tema */}
-                  <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-600 w-24`}>[{log.timestamp}]</td>
+                    {/* User */}
+                    <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-800 font-semibold`}>
+                      {log.user}
+                    </td>
 
-                  <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-800 font-medium`}>
-                    {log.user}
+                    {/* Role + Icon */}
+                    <td className={`${themeColors.row} py-4 px-4 text-sm`}>
+                      <div className="flex items-center gap-2">
+                        {getRoleIcon(log.role)}
+                        <span className={`font-medium text-xs uppercase ${getRoleColor(log.role)}`}>
+                          {log.role}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Kolom Spesifik DLH */}
+                    {showDlhSpecificColumns && (
+                      <>
+                        <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
+                          {log.jenis_dlh === 'provinsi' ? 'Provinsi' : 
+                           log.jenis_dlh === 'kabkota' ? 'Kab/Kota' : '-'}
+                        </td>
+                        <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
+                          {log.province_name || '-'}
+                        </td>
+                        <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
+                          {log.regency_name || '-'}
+                        </td>
+                      </>
+                    )}
+
+                    {/* Aksi & Target */}
+                    <td className={`${themeColors.row} py-4 px-4 text-sm`}>
+                      <div className="flex flex-col">
+                        <span className="text-gray-800 font-medium">
+                          {log.action}
+                        </span>
+                        {log.target && log.target !== '-' && (
+                          <span className="text-xs text-gray-500 mt-0.5 italic">
+                            Target: {log.target}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={showDlhSpecificColumns ? 7 : 4} className="py-8 text-center text-gray-500">
+                    Belum ada aktivitas tercatat.
                   </td>
-
-                  {/* Role + Icon */}
-                  <td className={`${themeColors.row} py-4 px-4 text-sm font-medium flex items-center gap-2`}>
-                    {getRoleIcon(log.role)}
-                    <span className={getRoleColor(log.role)}>
-                      {log.role.toUpperCase()}
-                    </span>
-                  </td>
-
-                  {showDlhSpecificColumns && (
-                    <>
-                      <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
-                        {log.jenis_dlh === 'provinsi' ? 'Provinsi' : 
-                         log.jenis_dlh === 'kabkota' ? 'Kab/Kota' : '-'}
-                      </td>
-                      <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
-                        {log.province_name || '-'}
-                      </td>
-                      <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
-                        {log.regency_name || '-'}
-                      </td>
-                    </>
-                  )}
-
-                  <td className={`${themeColors.row} py-4 px-4 text-sm text-gray-700`}>
-                    {log.action}
-                  </td>
-
                 </tr>
-              ))}
+              )}
             </tbody>
-
           </table>
         </div>
       </div>
@@ -139,7 +135,6 @@ export default function LastActivityCard({
   );
 }
 
-/* Helper warna role */
 function getRoleColor(role: string) {
   switch(role) {
     case 'dlh': return 'text-blue-600';
@@ -149,16 +144,11 @@ function getRoleColor(role: string) {
   }
 }
 
-/* Helper icon role */
 function getRoleIcon(role: string) {
   switch (role) {
-    case 'dlh':
-      return <FaUserTie className="text-blue-600 text-base" />;
-    case 'pusdatin':
-      return <FaUserCog className="text-green-600 text-base" />;
-    case 'admin':
-      return <FaUserShield className="text-red-600 text-base" />;
-    default:
-      return null;
+    case 'dlh': return <FaUserTie className="text-blue-600 text-base" />;
+    case 'pusdatin': return <FaUserCog className="text-green-600 text-base" />;
+    case 'admin': return <FaUserShield className="text-red-600 text-base" />;
+    default: return null;
   }
 }

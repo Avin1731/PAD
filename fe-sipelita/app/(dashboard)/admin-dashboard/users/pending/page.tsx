@@ -1,6 +1,5 @@
 'use client';
 
-// HAPUS 'useRef'
 import { useState, useEffect } from 'react';
 import { User } from '@/context/AuthContext';
 import StatCard from '@/components/StatCard';
@@ -9,6 +8,7 @@ import UserTable from '@/components/UserTable';
 import Pagination from '@/components/Pagination';
 import UniversalModal from '@/components/UniversalModal';
 import axios from '@/lib/axios';
+import Link from 'next/link';
 
 const USERS_PER_PAGE = 25;
 
@@ -26,6 +26,21 @@ const INITIAL_MODAL_CONFIG = {
   onConfirm: () => {},
 };
 
+// Helper function untuk logging (Fire and Forget)
+const logActivity = async (action: string, description: string) => {
+  try {
+    // Endpoint ini mungkin 404 sekarang, tapi kita siapkan kodenya
+    await axios.post('/api/logs', {
+      action,
+      description,
+      role: 'admin', // Hardcode sementara, nanti backend handle dari token
+    });
+  } catch (error) {
+    // Silent error: Jangan ganggu user jika log gagal
+    console.error('Gagal mencatat log:', error);
+  }
+};
+
 export default function UsersPendingPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [users, setUsers] = useState<User[]>([]);
@@ -41,11 +56,8 @@ export default function UsersPendingPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState(INITIAL_MODAL_CONFIG);
-  
-  // --- 1. HAPUS STATE INI ---
-  // const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
-  // ---------------- FETCH USERS (Tidak Berubah) ---------------------
+  // ---------------- FETCH USERS ---------------------
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -66,7 +78,7 @@ export default function UsersPendingPage() {
     fetchUsers();
   }, []);
 
-  // ---------------- FILTER + PAGINATION (Tidak Berubah) -------------
+  // ---------------- FILTER + PAGINATION -------------
   const filteredUsers = users.filter((u) => {
     const jenis = activeTab === 'provinsi' ? 'DLH Provinsi' : 'DLH Kab-Kota';
     return u.jenis_dlh?.name === jenis;
@@ -82,29 +94,20 @@ export default function UsersPendingPage() {
     setCurrentPage(1);
   }, [activeTab]);
   
-  // --- FUNGSI CLOSE YANG SIMPLE ---
   const closeModal = () => {
     setIsModalOpen(false);
-    // Kita juga bisa reset isSubmitting di sini untuk keamanan
-    // jika modal ditutup manual
     if (isSubmitting) {
       setIsSubmitting(false);
     }
   };
   
-  // --- FUNGSI RESET YANG AKAN DIPANGGIL OLEH ANIMASI ---
   const resetModalConfig = () => {
     setModalConfig(INITIAL_MODAL_CONFIG);
   }
 
   // ---------------- PERFORM ACTION -------------------
-  // --- 2. UBAH TANDA TANGAN FUNGSI: TAMBAHKAN 'id' ---
   const performAction = async (action: 'approve' | 'reject', id: number) => {
-    console.log("DEBUG: performAction called with action:", action, "id:", id, "isSubmitting (before):", isSubmitting);
-    
-    // --- 3. CEK 'id' LANGSUNG ---
     if (!id) {
-      console.warn("performAction called but id is missing.");
       closeModal();
       return;
     }
@@ -112,19 +115,23 @@ export default function UsersPendingPage() {
     setIsSubmitting(true);
 
     const originalUsers = [...users];
-    // --- 4. GUNAKAN 'id' ---
+    // Ambil data user untuk keperluan logging nama
+    const targetUser = users.find(u => u.id === id);
     const optimisticUsers = users.filter(u => u.id !== id);
     setUsers(optimisticUsers);
 
     const key = activeTab === 'provinsi' ? 'dlhProvinsi' : 'dlhKabKota';
     setStats(prev => ({ ...prev, [key]: prev[key] - 1 }));
 
-    setIsModalOpen(false); // Tutup modal "Konfirmasi"
+    setIsModalOpen(false);
 
     try {
       if (action === 'approve') {
-        // --- 5. GUNAKAN 'id' ---
         await axios.post(`/api/admin/users/${id}/approve`);
+        
+        // --- LOGGING ---
+        logActivity('Menyetujui Akun', `Menyetujui akun DLH: ${targetUser?.name || 'Unknown'}`);
+
         setModalConfig({
           title: 'Berhasil Approve',
           message: 'Pengguna telah berhasil disetujui.',
@@ -133,11 +140,14 @@ export default function UsersPendingPage() {
           showCancelButton: false,
           onConfirm: closeModal, 
         });
-        setIsModalOpen(true); // Buka modal sukses
+        setIsModalOpen(true);
 
       } else {
-        // --- 6. GUNAKAN 'id' ---
         await axios.delete(`/api/admin/users/${id}/reject`);
+        
+        // --- LOGGING ---
+        logActivity('Menolak Akun', `Menolak akun DLH: ${targetUser?.name || 'Unknown'}`);
+
         setModalConfig({
           title: 'Berhasil Reject',
           message: 'Pengguna berhasil ditolak dan dihapus.',
@@ -163,17 +173,12 @@ export default function UsersPendingPage() {
       });
       setIsModalOpen(true);
     } finally {
-      // --- 7. HAPUS 'setSelectedUserId(null)' ---
       setIsSubmitting(false);
     }
   };
 
-  // ---------------- HANDLE APPROVE/REJECT -----------
   const handleApproveClick = (id: number) => {
-    console.log("DEBUG: handleApproveClick called with id:", id, "isSubmitting:", isSubmitting, "isModalOpen:", isModalOpen);
-    if (isSubmitting) {console.log("DEBUG: handleApproveClick prevented by isSubmitting check."); return;}
-    
-    // HAPUS 'setSelectedUserId(id)'
+    if (isSubmitting) return;
     
     setModalConfig({
       title: 'Konfirmasi Approve',
@@ -181,15 +186,12 @@ export default function UsersPendingPage() {
       variant: 'warning',
       confirmLabel: 'Approve',
       showCancelButton: true,
-      // --- 8. KIRIM 'id' LANGSUNG KE 'performAction' ---
       onConfirm: () => {
-        // Pengecekan isSubmitting masih bagus untuk keamanan
         if (isSubmitting) {
-            console.warn("Aksi approve dicegah karena sedang ada proses lain.");
             closeModal();
             return;
         }
-        performAction('approve', id); // <-- KIRIM ID DI SINI
+        performAction('approve', id);
       },
     });
     setIsModalOpen(true);
@@ -198,28 +200,23 @@ export default function UsersPendingPage() {
   const handleRejectClick = (id: number) => {
     if (isSubmitting) return;
 
-    // HAPUS 'setSelectedUserId(id)'
-    
     setModalConfig({
       title: 'Konfirmasi Reject',
       message: 'Apakah Anda yakin ingin menolak dan menghapus pengguna ini?',
       variant: 'danger',
       confirmLabel: 'Reject',
       showCancelButton: true,
-      // --- 9. KIRIM 'id' LANGSUNG KE 'performAction' ---
       onConfirm: () => {
          if (isSubmitting) {
-            console.warn("Aksi reject dicegah karena sedang ada proses lain.");
             closeModal();
             return;
          }
-        performAction('reject', id); // <-- KIRIM ID DI SINI
+        performAction('reject', id);
       },
     });
     setIsModalOpen(true);
   };
 
-  // ---------------- LOADING (Tidak Berubah) --------------------------
   if (loading) {
     return (
       <div className="p-8 space-y-8">
@@ -229,18 +226,43 @@ export default function UsersPendingPage() {
     );
   }
 
-  // ---------------- RENDER PAGE ----------------------
   return (
     <div className="p-8 space-y-8">
-      
       <header>
         <h1 className="text-3xl font-extrabold text-yellow-800">Manajemen Pengguna Pending</h1>
         <p className="text-gray-600">Daftar pengguna DLH yang menunggu persetujuan admin.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <StatCard {...statCardColors[0]} title="Total DLH Provinsi Pending" value={stats.dlhProvinsi} />
-        <StatCard {...statCardColors[1]} title="Total DLH Kab/Kota Pending" value={stats.dlhKabKota} />
+        <Link
+          href="#dlh"
+          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.preventDefault();
+            setActiveTab("provinsi");
+          }}
+          className="block transition-transform duration-300 hover:scale-105"
+        >
+          <StatCard
+            {...statCardColors[0]}
+            title="Total DLH Provinsi Pending"
+            value={stats.dlhProvinsi}
+          />
+        </Link>
+
+        <Link
+          href="#dlh"
+          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.preventDefault();
+            setActiveTab("kabkota");
+          }}
+          className="block transition-transform duration-300 hover:scale-105"
+        >
+          <StatCard
+            {...statCardColors[1]}
+            title="Total DLH Kab/Kota Pending"
+            value={stats.dlhKabKota}
+          />
+        </Link>
       </div>
 
       <InnerNav
@@ -283,11 +305,10 @@ export default function UsersPendingPage() {
         />
       </div>
 
-      {/* ---------------- MODAL UNIVERSAL ---------------- */}
       <UniversalModal
         isOpen={isModalOpen}
         onClose={closeModal} 
-        onExitComplete={resetModalConfig} // Ini sudah benar
+        onExitComplete={resetModalConfig} 
         title={modalConfig.title}
         message={modalConfig.message}
         variant={modalConfig.variant}
