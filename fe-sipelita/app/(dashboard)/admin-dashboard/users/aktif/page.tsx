@@ -183,7 +183,7 @@ export default function UsersAktifPage() {
                 setActiveTab('admin');
               }
             }}
-            className="h-full"
+            className="h-full block transition-transform hover:scale-105"
           >
             {stat.type === 'progress' ? (
               <ProgressStatCard

@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Province;
+use App\Models\Log; // <-- Penting: Model Log
+use App\Http\Resources\LogResource; // <-- Penting: Resource Log
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AdminController extends Controller
 {
@@ -65,7 +68,7 @@ class AdminController extends Controller
                 'jenis_dlh' => $user->jenisDlh,
                 'province_id' => $user->province_id,
                 'regency_id' => $user->regency_id,
-                'province_name' => $user->province->name ?? $this->getProvinceFromRegency($user->regency_id), // FIXED
+                'province_name' => $user->province->name ?? $this->getProvinceFromRegency($user->regency_id),
                 'regency_name' => $user->regency->name ?? null,
                 'status' => $user->status,
                 'created_at' => $user->created_at,
@@ -93,7 +96,7 @@ class AdminController extends Controller
                 'jenis_dlh' => $user->jenisDlh,
                 'province_id' => $user->province_id,
                 'regency_id' => $user->regency_id,
-                'province_name' => $user->province->name ?? $this->getProvinceFromRegency($user->regency_id), // FIXED
+                'province_name' => $user->province->name ?? $this->getProvinceFromRegency($user->regency_id),
                 'regency_name' => $user->regency->name ?? null,
                 'status' => $user->status,
                 'created_at' => $user->created_at,
@@ -120,34 +123,20 @@ class AdminController extends Controller
         return response()->json(['message' => 'User ditolak dan dihapus']);
     }
 
-    public function getLogs(): JsonResponse
+    // --- FUNGSI LOGS YANG DIPERBARUI ---
+    public function getLogs(): AnonymousResourceCollection
     {
-        // Untuk sekarang, kembalikan dummy data
-        $logs = [
-            [
-                'id' => 1,
-                'user' => 'DLH Jawa Barat',
-                'action' => 'upload dokumen SLHD.',
-                'timestamp' => '09:00',
-                'role' => 'dlh'
-            ],
-            [
-                'id' => 2,
-                'user' => 'Pusdatin A',
-                'action' => 'atur deadline penerimaan.',
-                'timestamp' => '08:30',
-                'role' => 'pusdatin'
-            ],
-            [
-                'id' => 3,
-                'user' => 'Admin Satu',
-                'action' => 'approve DLH Kabupaten Bogor.',
-                'timestamp' => '08:00',
-                'role' => 'admin'
-            ],
-        ];
+        // Mengambil semua log, urutkan dari yang terbaru
+        // Eager load relasi user, role, dll untuk performa
+        $logs = Log::with([
+            'user.role', 
+            'user.jenisDlh', 
+            'user.province', 
+            'user.regency'
+        ])->latest()->get();
 
-        return response()->json($logs);
+        // Mengembalikan data yang sudah diformat oleh LogResource
+        return LogResource::collection($logs);
     }
 
     public function createPusdatin(Request $request): JsonResponse
@@ -156,14 +145,17 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:8',
+            // Tambahkan validasi untuk nomor_telepon jika perlu
+            'nomor_telepon' => 'nullable|string|max:20',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'role_id' => 2, // Pusdatin
+            'role_id' => 2, // Role ID Pusdatin
             'status' => 'aktif',
+            'nomor_telepon' => $request->nomor_telepon, // Simpan nomor telepon
         ]);
 
         return response()->json($user, 201);
@@ -172,7 +164,10 @@ class AdminController extends Controller
     public function deletePusdatin($id): JsonResponse
     {
         $user = User::findOrFail($id);
-        if ($user->role_id !== 2) { // Bukan pusdatin
+        
+        // Pastikan hanya akun Pusdatin yang dihapus
+        // Asumsi role_id 2 adalah Pusdatin
+        if ($user->role_id !== 2) { 
             return response()->json(['message' => 'Hanya akun Pusdatin yang bisa dihapus.'], 400);
         }
 

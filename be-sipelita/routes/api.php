@@ -7,16 +7,15 @@ use App\Http\Controllers\Api\WilayahController;
 use App\Http\Controllers\Api\PusdatinDashboardController;
 use App\Http\Controllers\Api\PortalController;
 use App\Http\Controllers\Api\PusdatinDeadlineController;
-use App\Http\Controllers\Api\AdminController; // <-- Tambahkan
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\LogController; // <-- Pastikan ini ada
 
-// --- BUKA PEMBUNGKUS (Middleware Sesi) ---
 Route::middleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
 ])->group(function () {
-// --- BATAS PEMBUKA ---
 
-    // Endpoint publik
+    // --- Endpoint Publik ---
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/jenis-dlh', [AuthController::class, 'getJenisDlh']);
@@ -25,9 +24,12 @@ Route::middleware([
     Route::get('/regencies/all', [WilayahController::class, 'getAllRegencies']);
     Route::get('/regencies/{province_id}', [WilayahController::class, 'getRegencies']);
 
-    // Endpoint yang dilindungi
+    // --- Endpoint yang Dilindungi (Perlu Login) ---
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', [AuthController::class, 'user']);
+
+        // Route Baru untuk Mencatat Log (Bisa diakses Admin, Pusdatin, DLH)
+        Route::post('/logs', [LogController::class, 'store']);
 
         // Dashboard Pusdatin
         Route::get('/pusdatin-dashboard', [PusdatinDashboardController::class, 'getDashboardData']);
@@ -46,11 +48,13 @@ Route::middleware([
             Route::get('/users/pending', [AdminController::class, 'getUsersPending']);
             Route::post('/users/{id}/approve', [AdminController::class, 'approveUser']);
             Route::delete('/users/{id}/reject', [AdminController::class, 'rejectUser']);
+            
+            // Route untuk mengambil data Logs (diperbarui controllernya)
             Route::get('/logs', [AdminController::class, 'getLogs']);
+            
             Route::post('/pusdatin', [AdminController::class, 'createPusdatin']);
             Route::delete('/pusdatin/{id}', [AdminController::class, 'deletePusdatin']);
         });
-        // --- END ADMIN ---
     });
 
-}); // <-- Batas grup middleware
+});
