@@ -74,7 +74,7 @@ export default function Header() {
               { name: 'Log Aktivitas Sistem', href: `${baseHref}/users/logs` },
             ] 
           },
-          { name: 'Pengaturan Dasar', href: `${baseHref}/settings` },
+          { name: 'Kelola Akun Pusdatin', href: `${baseHref}/settings` },
       ];
   } else if (userRoleName === 'pusdatin') {
       navLinks = [

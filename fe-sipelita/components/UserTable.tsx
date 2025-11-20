@@ -1,6 +1,6 @@
 'use client';
 
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaTrash } from 'react-icons/fa'; // Import FaTrash
 
 // Tipe data khusus untuk TABEL (tidak bentrok dengan AuthContext)
 export interface UserTableRow {
@@ -18,26 +18,28 @@ interface UserTableProps {
   users: UserTableRow[];
   onApprove?: (id: number) => void;
   onReject?: (id: number) => void;
+  onDelete?: (id: number) => void; // <-- 1. Tambah prop onDelete
   showLocation?: boolean;
   showDlhSpecificColumns?: boolean;
-  isSubmitting?: boolean; // <-- 1. TAMBAHKAN PROP INI
+  isSubmitting?: boolean; 
 }
 
 export default function UserTable({
   users,
   onApprove,
   onReject,
+  onDelete, // <-- 2. Ambil prop
   showLocation = false,
   showDlhSpecificColumns = false,
-  isSubmitting = false, // <-- 2. AMBIL PROP DI SINI (default false)
+  isSubmitting = false, 
 }: UserTableProps) {
 
-  // ... (Semua fungsi helper Anda TIDAK BERUBAH) ...
+  // ... (helper functions tetap sama) ...
   const getDisplayRole = (user: UserTableRow): string => {
     if (user.role === 'DLH' && user.jenis_dlh) {
-      return user.jenis_dlh; // 'DLH Provinsi' atau 'DLH Kab-Kota'
+      return user.jenis_dlh; 
     }
-    return user.role; // 'Admin', 'Pusdatin', dll
+    return user.role; 
   };
   const isDlhProvinsi = (user: UserTableRow): boolean => {
     return user.role === 'DLH' && user.jenis_dlh === 'DLH Provinsi';
@@ -45,36 +47,25 @@ export default function UserTable({
   const shouldShowRegencyColumn = showLocation && (!showDlhSpecificColumns || users.some(u => !isDlhProvinsi(u)));
   const getRoleTheme = (role: string) => {
     switch(role.toLowerCase()) {
-      case 'dlh': return {
-        headerBg: 'bg-blue-200',
-        rowBg: 'bg-blue-50',
-        textColor: 'text-blue-600'
-      };
-      case 'pusdatin': return {
-        headerBg: 'bg-green-200',
-        rowBg: 'bg-green-50',
-        textColor: 'text-green-600'
-      };
-      case 'admin': return {
-        headerBg: 'bg-red-200',
-        rowBg: 'bg-red-50',
-        textColor: 'text-red-600'
-      };
-      default: return {
-        headerBg: 'bg-gray-200',
-        rowBg: 'bg-gray-50', 
-        textColor: 'text-gray-600'
-      };
+      case 'dlh': return { headerBg: 'bg-blue-200', rowBg: 'bg-blue-50', textColor: 'text-blue-600' };
+      case 'pusdatin': return { headerBg: 'bg-green-200', rowBg: 'bg-green-50', textColor: 'text-green-600' };
+      case 'admin': return { headerBg: 'bg-red-200', rowBg: 'bg-red-50', textColor: 'text-red-600' };
+      default: return { headerBg: 'bg-gray-200', rowBg: 'bg-gray-50', textColor: 'text-gray-600' };
     }
   };
 
+  // Cek apakah ada kolom aksi yang perlu ditampilkan
+  const hasActions = (onApprove && onReject) || onDelete;
+
   return (
     <div>
+      <div className="px-6 py-3">
+        <h3 className="text-xl font-bold text-gray-800 pl-0 -ml-4">Tabel User</h3>
+      </div>
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             
-            {/* ... (thead TIDAK BERUBAH) ... */}
             <thead className={getRoleTheme(users[0]?.role || 'dlh').headerBg}>
               <tr>
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Nama</th>
@@ -89,7 +80,9 @@ export default function UserTable({
                   </>
                 )}
                 <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Status</th>
-                {(onApprove && onReject) && (
+                
+                {/* Tampilkan header Aksi jika ada action handler */}
+                {hasActions && (
                   <th className="py-3 px-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Aksi</th>
                 )}
               </tr>
@@ -101,7 +94,6 @@ export default function UserTable({
                 return (
                   <tr key={user.id} className="hover:bg-gray-100">
                     
-                    {/* ... (td Nama, Email, Role, Lokasi, Status TIDAK BERUBAH) ... */}
                     <td className={`${theme.rowBg} py-4 px-4 text-sm text-gray-800 font-medium`}>
                       {user.name}
                     </td>
@@ -137,31 +129,48 @@ export default function UserTable({
                       </span>
                     </td>
 
-                    {(onApprove && onReject) && (
+                    {hasActions && (
                       <td className={`${theme.rowBg} py-4 px-4 text-sm`}>
-                        <div className="flex space-x-4">
+                        <div className="flex space-x-4 items-center">
                           
-                          {/* 3. MODIFIKASI TOMBOL TERIMA */}
-                          <button
-                            onClick={() => onApprove(user.id)}
-                            disabled={isSubmitting} // <-- TAMBAHKAN INI
-                            className="text-green-600 hover:text-green-900 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" // <-- TAMBAHKAN 'disabled:' STYLING
-                            title="Terima User"
-                          >
-                            <FaCheck className="text-base" />
-                            <span className="text-sm">Terima</span>
-                          </button>
-                          
-                          {/* 4. MODIFIKASI TOMBOL TOLAK */}
-                          <button
-                            onClick={() => onReject(user.id)}
-                            disabled={isSubmitting} // <-- TAMBAHKAN INI
-                            className="text-red-600 hover:text-red-900 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" // <-- TAMBAHKAN 'disabled:' STYLING
-                            title="Tolak User"
-                          >
-                            <FaTimes className="text-base" />
-                            <span className="text-sm">Tolak</span>
-                          </button>
+                          {/* Kasus Approve/Reject (Halaman Pending) */}
+                          {(onApprove && onReject) && (
+                            <>
+                              <button
+                                onClick={() => onApprove(user.id)}
+                                disabled={isSubmitting} 
+                                className="text-green-600 hover:text-green-900 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Terima User"
+                              >
+                                <FaCheck className="text-base" />
+                                <span className="text-sm">Terima</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => onReject(user.id)}
+                                disabled={isSubmitting} 
+                                className="text-red-600 hover:text-red-900 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Tolak User"
+                              >
+                                <FaTimes className="text-base" />
+                                <span className="text-sm">Tolak</span>
+                              </button>
+                            </>
+                          )}
+
+                          {/* Kasus Delete Only (Halaman Settings/List) */}
+                          {onDelete && (
+                             <button
+                                onClick={() => onDelete(user.id)}
+                                disabled={isSubmitting} 
+                                className="text-red-600 hover:text-red-900 flex items-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white px-3 py-1 rounded border border-red-200 hover:bg-red-50"
+                                title="Hapus User"
+                              >
+                                <FaTrash className="text-sm" />
+                                <span className="text-sm">Hapus Akun</span>
+                              </button>
+                          )}
+
                         </div>
                       </td>
                     )}

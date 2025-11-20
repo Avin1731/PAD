@@ -1,4 +1,3 @@
-// src/app/(dashboard)/admin-dashboard/users/aktif/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +7,7 @@ import UserTable from '@/components/UserTable';
 import Pagination from '@/components/Pagination';
 import Link from 'next/link';
 import axios from '@/lib/axios';
+import { FiSearch } from 'react-icons/fi'; 
 
 const USERS_PER_PAGE = 25;
 
@@ -16,12 +16,12 @@ const statCardColors = [
   { bg: 'bg-blue-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
   { bg: 'bg-blue-50', border: 'border-blue-300', titleColor: 'text-blue-600', valueColor: 'text-blue-800' },
   { bg: 'bg-green-50', border: 'border-green-300', titleColor: 'text-green-600', valueColor: 'text-green-800' },
-  { bg: 'bg-red-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' }, // ✅ Fixed: changed from bg-red-500 to bg-red-50
+  { bg: 'bg-red-50', border: 'border-red-300', titleColor: 'text-red-600', valueColor: 'text-red-800' },
 ];
 
-// Komponen StatCard dengan Progress Bar (didefinisikan di dalam file ini)
+// Komponen StatCard dengan Progress Bar
 const ProgressStatCard = ({ title, current, max, color = 'blue' }: { title: string; current: number; max: number; color?: 'blue' | 'green' | 'red' }) => {
-  const percentage = Math.min(100, (current / max) * 100); // Batasi maksimal 100%
+  const percentage = Math.min(100, (current / max) * 100);
   const colorClasses = {
     blue: { bar: 'bg-blue-500', border: 'border-blue-300', text: 'text-blue-600' },
     green: { bar: 'bg-green-500', border: 'border-green-300', text: 'text-green-600' },
@@ -31,13 +31,11 @@ const ProgressStatCard = ({ title, current, max, color = 'blue' }: { title: stri
   const selectedColors = colorClasses[color];
 
   return (
-    // Tambahkan h-full flex flex-col
     <div className={`bg-white rounded-xl shadow-sm border ${selectedColors.border} p-6 h-full flex flex-col`}>
       <div>
         <h3 className={`text-sm font-medium ${selectedColors.text} mb-1`}>{title}</h3>
         <p className="text-2xl font-bold text-gray-900">{current} / {max}</p>
       </div>
-      {/* Gunakan flex-grow agar progress bar tetap di bawah */}
       <div className="mt-auto">
         <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
           <div
@@ -45,7 +43,6 @@ const ProgressStatCard = ({ title, current, max, color = 'blue' }: { title: stri
             style={{ width: `${percentage}%` }}
           ></div>
         </div>
-        {/* Baris ini dihapus: <p className="text-xs text-gray-500 mt-1">{percentage.toFixed(2)}% dari target</p> */}
       </div>
     </div>
   );
@@ -59,6 +56,9 @@ export default function UsersAktifPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState('dlh');
   const [activeDlhTab, setActiveDlhTab] = useState('provinsi');
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [stats, setStats] = useState({
     dlhProvinsi: 0,
@@ -72,7 +72,7 @@ export default function UsersAktifPage() {
     const fetchUsers = async () => {
       try {
         const res = await axios.get('/api/admin/users/aktif');
-        const data: User[] = res.data; // ✅ Fixed: added proper variable declaration
+        const data: User[] = res.data;
 
         const dlhProvinsi = data.filter(
           (u: User) => u.role?.name === 'DLH' && u.jenis_dlh?.name === 'DLH Provinsi'
@@ -100,16 +100,32 @@ export default function UsersAktifPage() {
     fetchUsers();
   }, []);
 
-  // --- Filter berdasarkan Tab ---
+  // --- Filter berdasarkan Tab DAN Search ---
   const filteredUsers = () => {
+    // PERBAIKAN: Tambahkan tipe eksplisit ': User[]' di sini
+    let result: User[] = []; 
+
+    // 1. Filter by Tab/Role
     if (activeTab === 'dlh') {
-      return activeDlhTab === 'provinsi'
+      result = activeDlhTab === 'provinsi'
         ? users.filter((u) => u.jenis_dlh?.name === 'DLH Provinsi')
         : users.filter((u) => u.jenis_dlh?.name === 'DLH Kab-Kota');
+    } else if (activeTab === 'pusdatin') {
+      result = users.filter((u) => u.role?.name === 'Pusdatin');
+    } else if (activeTab === 'admin') {
+      result = users.filter((u) => u.role?.name === 'Admin');
     }
-    if (activeTab === 'pusdatin') return users.filter((u) => u.role?.name === 'Pusdatin');
-    if (activeTab === 'admin') return users.filter((u) => u.role?.name === 'Admin');
-    return [];
+
+    // 2. Filter by Search Term
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      result = result.filter(user => 
+        user.name.toLowerCase().includes(lowerTerm) || 
+        user.email.toLowerCase().includes(lowerTerm)
+      );
+    }
+
+    return result;
   };
 
   // --- Pagination ---
@@ -120,10 +136,16 @@ export default function UsersAktifPage() {
     return filteredUsers().slice(start, start + USERS_PER_PAGE);
   };
 
-  // Reset page ketika tab berubah
+  // Reset page & search ketika tab berubah
   useEffect(() => {
     setCurrentPage(1);
+    setSearchTerm(''); 
   }, [activeTab, activeDlhTab]);
+
+  // Reset page ketika search berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Tabs
   const dlhTabs = [
@@ -139,7 +161,7 @@ export default function UsersAktifPage() {
 
   const isDlhTabActive = activeTab === 'dlh';
 
-  // Stats untuk StatCard dengan link dan tipe
+  // Stats Data
   const statsData = [
     { title: 'Total DLH Provinsi Aktif', value: stats.dlhProvinsi, max: 38, type: 'progress', color: 'blue' as const, link: '#dlh' },
     { title: 'Total DLH Kab/Kota Aktif', value: stats.dlhKabKota, max: 514, type: 'progress', color: 'blue' as const, link: '#dlh' },
@@ -164,8 +186,7 @@ export default function UsersAktifPage() {
         <p className="text-gray-600">Daftar pengguna yang telah diverifikasi dan aktif di sistem.</p>
       </header>
 
-      {/* Statistik dengan Link */}
-      {/* Tambahkan items-stretch */}
+      {/* Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
         {statsData.map((stat, index) => (
           <Link
@@ -173,7 +194,6 @@ export default function UsersAktifPage() {
             href={stat.link}
             onClick={(e) => {
               e.preventDefault();
-              // Scroll ke section atau set active tab
               if (stat.link === '#dlh') {
                 setActiveTab('dlh');
                 setActiveDlhTab(stat.title.includes('Provinsi') ? 'provinsi' : 'kabkota');
@@ -188,13 +208,11 @@ export default function UsersAktifPage() {
             {stat.type === 'progress' ? (
               <ProgressStatCard
                 title={stat.title}
-                // Gunakan nilai default 0 untuk mencegah error TypeScript
                 current={stat.value ?? 0}
                 max={stat.max ?? 0}
                 color={stat.color}
               />
             ) : (
-              // Tambahkan h-full flex flex-col justify-center
               <div className={`bg-white rounded-xl shadow-sm border ${statCardColors[index].border} p-6 h-full flex flex-col justify-center`}>
                 <h3 className={`text-sm font-medium ${statCardColors[index].titleColor} mb-1`}>{stat.title}</h3>
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
@@ -216,6 +234,22 @@ export default function UsersAktifPage() {
           className="mt-0"
         />
       )}
+
+      {/* --- SEARCH BAR --- */}
+      <div className="flex items-center mb-4">
+        <div className="relative flex-1 max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiSearch className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder={`Cari nama atau email ${activeTab === 'dlh' ? (activeDlhTab === 'provinsi' ? 'DLH Provinsi' : 'DLH Kab/Kota') : activeTab}...`}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
 
       {/* Tabel User */}
       <UserTable
