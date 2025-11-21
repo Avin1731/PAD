@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             PendingUserSeeder::class,
             DeadlineSeeder::class,
             LogSeeder::class,
-            
+            PenerimaanDataSeeder::class,
         ]);
     }
 }

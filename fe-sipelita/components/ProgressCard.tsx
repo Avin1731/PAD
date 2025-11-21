@@ -18,7 +18,7 @@ export default function ProgressCard({
   const progressColor = isCompleted ? 'bg-green-600' : 'bg-yellow-600';
 
   return (
-    <div className={`p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 ${backgroundColor}`}>
+    <div className={`p-6 rounded-lg shadow-sm hover:shadow-md transition-transform hover:scale-105 ${backgroundColor}`}>
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-semibold text-gray-800">{stage}</h3>
         <span className={`text-xs font-medium ${statusColor}`}>

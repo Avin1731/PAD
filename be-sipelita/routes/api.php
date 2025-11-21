@@ -8,7 +8,8 @@ use App\Http\Controllers\Api\PusdatinDashboardController;
 use App\Http\Controllers\Api\PortalController;
 use App\Http\Controllers\Api\PusdatinDeadlineController;
 use App\Http\Controllers\Api\AdminController;
-use App\Http\Controllers\Api\LogController; // <-- Pastikan ini ada
+use App\Http\Controllers\Api\LogController;
+use App\Http\Controllers\Api\PusdatinPenerimaanController;
 
 Route::middleware([
     \Illuminate\Session\Middleware\StartSession::class,
@@ -23,6 +24,10 @@ Route::middleware([
     Route::get('/provinces', [WilayahController::class, 'getProvinces']);
     Route::get('/regencies/all', [WilayahController::class, 'getAllRegencies']);
     Route::get('/regencies/{province_id}', [WilayahController::class, 'getRegencies']);
+
+    // --- TAMBAHKAN ROUTE PENERIMAAN DI SINI (PUBLIC) ---
+    Route::get('/penerimaan/kab-kota/slhd', [PusdatinPenerimaanController::class, 'getSlhdKabKota']);
+    Route::get('/penerimaan/kab-kota/iklh', [PusdatinPenerimaanController::class, 'getIklhKabKota']);
 
     // --- Endpoint yang Dilindungi (Perlu Login) ---
     Route::middleware('auth:sanctum')->group(function () {

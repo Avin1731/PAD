@@ -179,7 +179,7 @@ export default function SettingsPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="h-full">
+        <div className="h-full transition-transform hover:scale-105">
           <StatCard
             bgColor={pusdatinColor.bg}
             borderColor={pusdatinColor.border}

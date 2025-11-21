@@ -22,7 +22,7 @@ export default function StatCard({
     // PERBAIKAN: Tambahkan h-full (tinggi 100%) dan flex flex-col
     <div
       className={`${bgColor} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border ${borderColor} 
-      h-full flex flex-col justify-center`}
+      h-full flex flex-col justify-center transition-transform hover:scale-105`}
     >
       <h3 className={`text-sm font-medium mb-1 ${titleColor}`}>{title}</h3>
       <div className={`text-3xl font-extrabold ${valueColor}`}>{value}</div>
