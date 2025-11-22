@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             DeadlineSeeder::class,
             LogSeeder::class,
             PenerimaanDataSeeder::class,
+            DummyPenilaianSeeder::class,
         ]);
     }
 }
