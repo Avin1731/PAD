@@ -13,313 +13,227 @@ class PenerimaanDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // Hapus data existing untuk menghindari duplikasi
+        // 1. Bersihkan data lama
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         SlhdLaporan::truncate();
         IklhLaporan::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
-        // Ambil user pertama sebagai contoh
-        $user = User::first();
-        if (!$user) {
-            // Jika tidak ada user, buat dummy user
-            $user = User::create([
-                'name' => 'Admin DLH',
-                'email' => 'admin@dlh.go.id',
-                'password' => bcrypt('password'),
+        // 2. Definisi Data Dummy Penerimaan yang Bervariasi
+        // Fokus: Kelengkapan Dokumen (File ada/null) & Status Awal
+        $penerimaanData = [
+            // --- KASUS 1: LENGKAP & SEMPURNA (Jawa Barat) ---
+            [
+                'email' => 'dlh.bandung@example.com',
+                'name' => 'DLH Kota Bandung',
+                'kabkota' => 'Kota Bandung',
+                'provinsi' => 'Jawa Barat',
+                'jenis_dlh' => 'Kota Besar',
+                'tipologi' => 'Daratan',
+                // SLHD: Semua ada
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Bdg_Buku1.pdf',
+                    'buku_2' => 'SLHD_Bdg_Buku2.pdf',
+                    'tabel' => 'SLHD_Bdg_Tabel.xlsx'
+                ],
+                // IKLH: Nilai sudah diisi (simulasi user sudah input)
+                'iklh_data' => [
+                    'ika' => 85.50, 'iku' => 78.20, 'ikl' => 82.10, 
+                    'ik_pesisir' => 0, 'ik_kehati' => 88.30, 'total' => 83.25,
+                    'verifikasi' => false // Diubah jadi false
+                ]
+            ],
+
+            // --- KASUS 2: KURANG LENGKAP (Jawa Barat) ---
+            [
+                'email' => 'dlh.bogor@example.com',
+                'name' => 'DLH Kota Bogor',
+                'kabkota' => 'Kota Bogor',
+                'provinsi' => 'Jawa Barat',
+                'jenis_dlh' => 'Kota Sedang',
+                'tipologi' => 'Daratan',
+                // SLHD: Buku 2 Hilang
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Bogor_Buku1.pdf',
+                    'buku_2' => null, 
+                    'tabel' => 'SLHD_Bogor_Tabel.xlsx'
+                ],
+                // IKLH: Belum diverifikasi
+                'iklh_data' => [
+                    'ika' => 82.10, 'iku' => 75.80, 'ikl' => 79.40, 
+                    'ik_pesisir' => 0, 'ik_kehati' => 81.60, 'total' => 79.48,
+                    'verifikasi' => false
+                ]
+            ],
+
+            // --- KASUS 3: PESISIR & LENGKAP (Jawa Tengah) ---
+            [
+                'email' => 'dlh.semarang@example.com',
+                'name' => 'DLH Kota Semarang',
+                'kabkota' => 'Kota Semarang',
+                'provinsi' => 'Jawa Tengah',
+                'jenis_dlh' => 'Kota Besar',
+                'tipologi' => 'Pesisir',
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Smg_Buku1.pdf',
+                    'buku_2' => 'SLHD_Smg_Buku2.pdf',
+                    'tabel' => 'SLHD_Smg_Tabel.xlsx'
+                ],
+                'iklh_data' => [
+                    'ika' => 78.50, 'iku' => 72.30, 'ikl' => 75.80, 
+                    'ik_pesisir' => 80.20, 'ik_kehati' => 77.60, 'total' => 76.88,
+                    'verifikasi' => false // Diubah jadi false
+                ]
+            ],
+
+            // --- KASUS 4: BARU DAFTAR / KOSONG (Jawa Timur) ---
+            [
+                'email' => 'dlh.jember@example.com',
+                'name' => 'DLH Kabupaten Jember',
+                'kabkota' => 'Kabupaten Jember',
+                'provinsi' => 'Jawa Timur',
+                'jenis_dlh' => 'Kabupaten Besar',
+                'tipologi' => 'Daratan',
+                // SLHD: Belum ada sama sekali
+                'slhd_files' => [
+                    'buku_1' => null,
+                    'buku_2' => null,
+                    'tabel' => null
+                ],
+                // IKLH: Masih nol semua
+                'iklh_data' => [
+                    'ika' => 0, 'iku' => 0, 'ikl' => 0, 
+                    'ik_pesisir' => 0, 'ik_kehati' => 0, 'total' => 0,
+                    'verifikasi' => false
+                ]
+            ],
+
+            // --- KASUS 5: PESISIR LUAR JAWA (Bali) ---
+            [
+                'email' => 'dlh.denpasar@example.com',
+                'name' => 'DLH Kota Denpasar',
+                'kabkota' => 'Kota Denpasar',
+                'provinsi' => 'Bali',
+                'jenis_dlh' => 'Kota Sedang',
+                'tipologi' => 'Pesisir',
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Dps_Buku1.pdf', 
+                    'buku_2' => 'SLHD_Dps_Buku2.pdf', 
+                    'tabel' => 'SLHD_Dps_Tabel.xlsx'
+                ],
+                'iklh_data' => [
+                    'ika' => 87.20, 'iku' => 83.50, 'ikl' => 85.10, 
+                    'ik_pesisir' => 86.80, 'ik_kehati' => 89.20, 'total' => 86.36,
+                    'verifikasi' => false // Diubah jadi false
+                ]
+            ],
+
+            // --- KASUS 6: DARATAN LUAR JAWA (Sumatera Utara) ---
+            [
+                'email' => 'dlh.medan@example.com',
+                'name' => 'DLH Kota Medan',
+                'kabkota' => 'Kota Medan',
+                'provinsi' => 'Sumatera Utara',
+                'jenis_dlh' => 'Kota Besar',
+                'tipologi' => 'Daratan', // Anggap daratan untuk variasi, meski dekat laut
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Mdn_Buku1.pdf', 
+                    'buku_2' => null, // Kurang 1 buku
+                    'tabel' => 'SLHD_Mdn_Tabel.xlsx'
+                ],
+                'iklh_data' => [
+                    'ika' => 79.80, 'iku' => 74.60, 'ikl' => 77.20, 
+                    'ik_pesisir' => 0, 'ik_kehati' => 80.10, 'total' => 78.62,
+                    'verifikasi' => false
+                ]
+            ],
+             // --- KASUS 7: DARATAN KALIMANTAN (Kalimantan Barat) ---
+             [
+                'email' => 'dlh.pontianak@example.com',
+                'name' => 'DLH Kota Pontianak',
+                'kabkota' => 'Kota Pontianak',
+                'provinsi' => 'Kalimantan Barat',
+                'jenis_dlh' => 'Kota Sedang',
+                'tipologi' => 'Daratan',
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Ptk_Buku1.pdf',
+                    'buku_2' => 'SLHD_Ptk_Buku2.pdf',
+                    'tabel' => 'SLHD_Ptk_Tabel.xlsx'
+                ],
+                'iklh_data' => [
+                    'ika' => 80.50, 'iku' => 79.20, 'ikl' => 81.10, 
+                    'ik_pesisir' => 0, 'ik_kehati' => 85.30, 'total' => 81.52,
+                    'verifikasi' => false // Diubah jadi false
+                ]
+            ],
+             // --- KASUS 8: PESISIR SULAWESI (Sulawesi Selatan) ---
+             [
+                'email' => 'dlh.makassar@example.com',
+                'name' => 'DLH Kota Makassar',
+                'kabkota' => 'Kota Makassar',
+                'provinsi' => 'Sulawesi Selatan',
+                'jenis_dlh' => 'Kota Besar',
+                'tipologi' => 'Pesisir',
+                'slhd_files' => [
+                    'buku_1' => 'SLHD_Mks_Buku1.pdf',
+                    'buku_2' => null, // Belum lengkap
+                    'tabel' => null
+                ],
+                'iklh_data' => [
+                    'ika' => 75.50, 'iku' => 70.20, 'ikl' => 72.10, 
+                    'ik_pesisir' => 80.0, 'ik_kehati' => 78.30, 'total' => 75.22,
+                    'verifikasi' => false
+                ]
+            ]
+        ];
+
+        // 3. Loop dan Insert ke Database
+        foreach ($penerimaanData as $data) {
+            // a. Pastikan User Ada
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name' => $data['name'],
+                    'password' => bcrypt('password'), // Default password
+                    'role_id' => 2, // Sesuaikan ID role DLH Anda
+                ]
+            );
+
+            // b. Insert ke tabel Penerimaan SLHD (Fokus checklist dokumen)
+            SlhdLaporan::create([
+                'user_id' => $user->id,
+                'provinsi' => $data['provinsi'],
+                'kabkota' => $data['kabkota'],
+                'pembagian_daerah' => $data['jenis_dlh'],
+                'tipologi' => $data['tipologi'],
+                // File dokumen (bisa null)
+                'buku_1' => $data['slhd_files']['buku_1'],
+                'buku_2' => $data['slhd_files']['buku_2'],
+                'tabel_utama' => $data['slhd_files']['tabel'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // c. Insert ke tabel Penerimaan IKLH (Fokus nilai awal)
+            IklhLaporan::create([
+                'user_id' => $user->id,
+                'provinsi' => $data['provinsi'],
+                'kabkota' => $data['kabkota'],
+                'jenis_dlh' => $data['jenis_dlh'], // Pastikan kolom ini ada di migrasi Anda
+                'tipologi' => $data['tipologi'],
+                // Nilai-nilai
+                'ika' => $data['iklh_data']['ika'],
+                'iku' => $data['iklh_data']['iku'],
+                'ikl' => $data['iklh_data']['ikl'],
+                'ik_pesisir' => $data['iklh_data']['ik_pesisir'],
+                'ik_kehati' => $data['iklh_data']['ik_kehati'],
+                'total_iklh' => $data['iklh_data']['total'],
+                'verifikasi' => $data['iklh_data']['verifikasi'],
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
 
-        // Data SLHD - Sample data untuk berbagai provinsi dan kabupaten/kota
-        $slhdData = [
-            // Jawa Barat
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Barat',
-                'kabkota' => 'Kota Bandung',
-                'pembagian_daerah' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Daratan',
-                'buku_1' => 'SLHD_Bandung_Buku1_2024.pdf',
-                'buku_2' => 'SLHD_Bandung_Buku2_2024.pdf',
-                'tabel_utama' => 'SLHD_Bandung_Tabel_2024.xlsx',
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Barat',
-                'kabkota' => 'Kota Bogor',
-                'pembagian_daerah' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'buku_1' => 'SLHD_Bogor_Buku1_2024.pdf',
-                'buku_2' => null,
-                'tabel_utama' => 'SLHD_Bogor_Tabel_2024.xlsx',
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Barat',
-                'kabkota' => 'Kabupaten Bandung',
-                'pembagian_daerah' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Daratan',
-                'buku_1' => 'SLHD_KabBandung_Buku1_2024.pdf',
-                'buku_2' => 'SLHD_KabBandung_Buku2_2024.pdf',
-                'tabel_utama' => null,
-            ],
-
-            // Jawa Tengah
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Tengah',
-                'kabkota' => 'Kota Semarang',
-                'pembagian_daerah' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Pesisir',
-                'buku_1' => 'SLHD_Semarang_Buku1_2024.pdf',
-                'buku_2' => 'SLHD_Semarang_Buku2_2024.pdf',
-                'tabel_utama' => 'SLHD_Semarang_Tabel_2024.xlsx',
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Tengah',
-                'kabkota' => 'Kota Surakarta',
-                'pembagian_daerah' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'buku_1' => 'SLHD_Surakarta_Buku1_2024.pdf',
-                'buku_2' => null,
-                'tabel_utama' => 'SLHD_Surakarta_Tabel_2024.xlsx',
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Tengah',
-                'kabkota' => 'Kabupaten Banyumas',
-                'pembagian_daerah' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'buku_1' => null,
-                'buku_2' => 'SLHD_Banyumas_Buku2_2024.pdf',
-                'tabel_utama' => 'SLHD_Banyumas_Tabel_2024.xlsx',
-            ],
-
-            // Jawa Timur
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Timur',
-                'kabkota' => 'Kota Surabaya',
-                'pembagian_daerah' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Pesisir',
-                'buku_1' => 'SLHD_Surabaya_Buku1_2024.pdf',
-                'buku_2' => 'SLHD_Surabaya_Buku2_2024.pdf',
-                'tabel_utama' => 'SLHD_Surabaya_Tabel_2024.xlsx',
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Timur',
-                'kabkota' => 'Kota Malang',
-                'pembagian_daerah' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'buku_1' => 'SLHD_Malang_Buku1_2024.pdf',
-                'buku_2' => null,
-                'tabel_utama' => null,
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Timur',
-                'kabkota' => 'Kabupaten Jember',
-                'pembagian_daerah' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Daratan',
-                'buku_1' => null,
-                'buku_2' => null,
-                'tabel_utama' => 'SLHD_Jember_Tabel_2024.xlsx',
-            ],
-
-            // Bali
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Bali',
-                'kabkota' => 'Kota Denpasar',
-                'pembagian_daerah' => 'Kabupaten/Kota Kecil',
-                'tipologi' => 'Pesisir',
-                'buku_1' => 'SLHD_Denpasar_Buku1_2024.pdf',
-                'buku_2' => 'SLHD_Denpasar_Buku2_2024.pdf',
-                'tabel_utama' => 'SLHD_Denpasar_Tabel_2024.xlsx',
-            ],
-
-            // Sumatera Utara
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Sumatera Utara',
-                'kabkota' => 'Kota Medan',
-                'pembagian_daerah' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Pesisir',
-                'buku_1' => 'SLHD_Medan_Buku1_2024.pdf',
-                'buku_2' => null,
-                'tabel_utama' => 'SLHD_Medan_Tabel_2024.xlsx',
-            ],
-        ];
-
-        // Data IKLH - Sample data dengan berbagai nilai dan status verifikasi
-        $iklhData = [
-            // Jawa Barat - Nilai tinggi, terverifikasi
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Barat',
-                'kabkota' => 'Kota Bandung',
-                'jenis_dlh' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Daratan',
-                'ika' => 85.50,
-                'iku' => 78.20,
-                'ikl' => 82.10,
-                'ik_pesisir' => 0,
-                'ik_kehati' => 88.30,
-                'total_iklh' => 83.25,
-                'verifikasi' => false,
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Barat',
-                'kabkota' => 'Kota Bogor',
-                'jenis_dlh' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'ika' => 82.10,
-                'iku' => 75.80, // Nilai rendah (<60)
-                'ikl' => 79.40,
-                'ik_pesisir' => 0,
-                'ik_kehati' => 81.60,
-                'total_iklh' => 79.48,
-                'verifikasi' => false,
-            ],
-
-            // Jawa Tengah - Nilai sedang
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Tengah',
-                'kabkota' => 'Kota Semarang',
-                'jenis_dlh' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Pesisir',
-                'ika' => 78.50,
-                'iku' => 72.30,
-                'ikl' => 75.80,
-                'ik_pesisir' => 80.20,
-                'ik_kehati' => 77.60, // Nilai rendah (<70)
-                'total_iklh' => 76.88,
-                'verifikasi' => false,
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Tengah',
-                'kabkota' => 'Kota Surakarta',
-                'jenis_dlh' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'ika' => 80.20,
-                'iku' => 76.50,
-                'ikl' => 78.90,
-                'ik_pesisir' => 0,
-                'ik_kehati' => 82.10,
-                'total_iklh' => 79.43,
-                'verifikasi' => false,
-            ],
-
-            // Jawa Timur - Nilai bervariasi
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Timur',
-                'kabkota' => 'Kota Surabaya',
-                'jenis_dlh' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Pesisir',
-                'ika' => 83.70,
-                'iku' => 79.40,
-                'ikl' => 81.20,
-                'ik_pesisir' => 84.50,
-                'ik_kehati' => 85.80,
-                'total_iklh' => 82.92,
-                'verifikasi' => false,
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Timur',
-                'kabkota' => 'Kota Malang',
-                'jenis_dlh' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'ika' => 76.80,
-                'iku' => 71.20,
-                'ikl' => 74.50,
-                'ik_pesisir' => 0,
-                'ik_kehati' => 78.90,
-                'total_iklh' => 75.35,
-                'verifikasi' => false,
-            ],
-
-            // Bali - Nilai tinggi
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Bali',
-                'kabkota' => 'Kota Denpasar',
-                'jenis_dlh' => 'Kabupaten/Kota Kecil',
-                'tipologi' => 'Pesisir',
-                'ika' => 87.20,
-                'iku' => 83.50,
-                'ikl' => 85.10,
-                'ik_pesisir' => 86.80,
-                'ik_kehati' => 89.20,
-                'total_iklh' => 86.36,
-                'verifikasi' => false,
-            ],
-
-            // Sumatera Utara
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Sumatera Utara',
-                'kabkota' => 'Kota Medan',
-                'jenis_dlh' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Pesisir',
-                'ika' => 79.80,
-                'iku' => 74.60,
-                'ikl' => 77.20,
-                'ik_pesisir' => 81.40,
-                'ik_kehati' => 80.10,
-                'total_iklh' => 78.62,
-                'verifikasi' => false,
-            ],
-
-            // Data tambahan untuk testing filter
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Barat',
-                'kabkota' => 'Kabupaten Bandung',
-                'jenis_dlh' => 'Kabupaten/Kota Besar',
-                'tipologi' => 'Daratan',
-                'ika' => 81.50,
-                'iku' => 77.80,
-                'ikl' => 79.90,
-                'ik_pesisir' => 0,
-                'ik_kehati' => 83.40,
-                'total_iklh' => 80.65,
-                'verifikasi' => false,
-            ],
-            [
-                'user_id' => $user->id,
-                'provinsi' => 'Jawa Tengah',
-                'kabkota' => 'Kabupaten Banyumas',
-                'jenis_dlh' => 'Kabupaten/Kota Sedang',
-                'tipologi' => 'Daratan',
-                'ika' => 75.60,
-                'iku' => 69.80,
-                'ikl' => 72.40,
-                'ik_pesisir' => 0,
-                'ik_kehati' => 76.20, // Nilai rendah (<70)
-                'total_iklh' => 73.50,
-                'verifikasi' => false,
-            ],
-        ];
-
-        // Insert data SLHD
-        foreach ($slhdData as $data) {
-            SlhdLaporan::create($data);
-        }
-
-        // Insert data IKLH
-        foreach ($iklhData as $data) {
-            IklhLaporan::create($data);
-        }
-
-        $this->command->info('Data Penerimaan SLHD dan IKLH berhasil di-generate!');
-        $this->command->info('Total SLHD: ' . count($slhdData) . ' records');
-        $this->command->info('Total IKLH: ' . count($iklhData) . ' records');
+        $this->command->info('Data Dummy Penerimaan (Checklist Dokumen) berhasil di-generate!');
     }
 }
