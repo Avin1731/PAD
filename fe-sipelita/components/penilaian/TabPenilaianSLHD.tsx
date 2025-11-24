@@ -5,7 +5,6 @@ import { FaFileExcel, FaCloudUploadAlt } from 'react-icons/fa';
 import { MdCheckBox, MdCheckBoxOutlineBlank } from 'react-icons/md';
 import Pagination from '@/components/Pagination';
 
-// Pre-generate data with scores to avoid impure function calls during render
 const generateSLHDData = () => {
   return Array.from({ length: 45 }, (_, i) => {
     const nilaiBukuI = 70 + Math.floor(Math.random() * 25);
@@ -29,6 +28,7 @@ const slhdData = generateSLHDData();
 
 export default function TabPenilaianSLHD() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageNilai, setCurrentPageNilai] = useState(1);
   const itemsPerPage = 10;
 
   const paginatedData = useMemo(() => {
@@ -37,10 +37,16 @@ export default function TabPenilaianSLHD() {
     return slhdData.slice(startIndex, endIndex);
   }, [currentPage]);
 
+  const paginatedDataNilai = useMemo(() => {
+    const startIndex = (currentPageNilai - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return slhdData.slice(startIndex, endIndex);
+  }, [currentPageNilai]);
+
   const totalPages = Math.ceil(slhdData.length / itemsPerPage);
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       <div>
         <div className="pb-4 mb-6 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-800">Kelayakan Administrasi Dokumen</h2>
@@ -55,7 +61,7 @@ export default function TabPenilaianSLHD() {
               <option>DI Yogyakarta</option>
             </select>
           </div>
-          <button className="bg-green-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors h-[38px]">
+          <button className="bg-green-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors">
             Filter
           </button>
         </div>
@@ -77,22 +83,18 @@ export default function TabPenilaianSLHD() {
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="py-4 px-6 text-sm font-medium bg-green-50 text-gray-800">{item.name}</td>
                     <td className="py-4 px-6 text-sm bg-green-50">
-                      <button className="text-green-600 hover:underline text-xs font-medium">Lihat Dokumen</button>
+                      <button className="text-green-600 hover:underline text-xs font-medium">
+                        Lihat Dokumen
+                      </button>
                     </td>
                     <td className="py-4 px-6 text-center bg-green-50 text-green-600 text-xl">
-                      <div className="flex justify-center">
-                        {item.buku1 ? <MdCheckBox /> : <MdCheckBoxOutlineBlank className="text-gray-300" />}
-                      </div>
+                      {item.buku1 ? <MdCheckBox /> : <MdCheckBoxOutlineBlank className="text-gray-300" />}
                     </td>
                     <td className="py-4 px-6 text-center bg-green-50 text-green-600 text-xl">
-                      <div className="flex justify-center">
-                        {item.buku2 ? <MdCheckBox /> : <MdCheckBoxOutlineBlank className="text-gray-300" />}
-                      </div>
+                      {item.buku2 ? <MdCheckBox /> : <MdCheckBoxOutlineBlank className="text-gray-300" />}
                     </td>
                     <td className="py-4 px-6 text-center bg-green-50 text-green-600 text-xl">
-                      <div className="flex justify-center">
-                        {item.tabel ? <MdCheckBox /> : <MdCheckBoxOutlineBlank className="text-gray-300" />}
-                      </div>
+                      {item.tabel ? <MdCheckBox /> : <MdCheckBoxOutlineBlank className="text-gray-300" />}
                     </td>
                   </tr>
                 ))}
@@ -119,27 +121,27 @@ export default function TabPenilaianSLHD() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="border border-gray-200 rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow bg-white">
-            <div>
-              <div className="flex items-center gap-2 mb-2 text-green-600">
-                <FaFileExcel className="text-xl" />
-                <h3 className="font-semibold text-gray-800">Unduh Template Excel</h3>
-              </div>
-              <p className="text-xs text-gray-500 mb-4">Silahkan unduh template excel, isi nilai, dan unggah kembali ke sistem.</p>
+          <div className="border border-gray-200 rounded-xl p-6 bg-white">
+            <div className="flex items-center gap-2 mb-2 text-green-600">
+              <FaFileExcel className="text-xl" />
+              <h3 className="font-semibold text-gray-800">Unduh Template Excel</h3>
             </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Silahkan unduh template excel, isi nilai, dan unggah kembali ke sistem.
+            </p>
             <button className="w-full bg-green-600 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-green-700">
               <FaFileExcel /> Unduh Template Excel Penilaian SLHD
             </button>
           </div>
 
-          <div className="border border-gray-200 rounded-xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow bg-white">
-            <div>
-              <div className="flex items-center gap-2 mb-2 text-green-600">
-                <FaCloudUploadAlt className="text-xl" />
-                <h3 className="font-semibold text-gray-800">Upload File Excel</h3>
-              </div>
-              <p className="text-xs text-gray-500 mb-4">Pastikan file yang diunggah sudah sesuai dengan template yang disediakan.</p>
+          <div className="border border-gray-200 rounded-xl p-6 bg-white">
+            <div className="flex items-center gap-2 mb-2 text-green-600">
+              <FaCloudUploadAlt className="text-xl" />
+              <h3 className="font-semibold text-gray-800">Upload File Excel</h3>
             </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Pastikan file yang diunggah sudah sesuai dengan template yang disediakan.
+            </p>
             <button className="w-full bg-green-100 text-green-700 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-green-200">
               <FaCloudUploadAlt /> Upload File Excel Hasil Penilaian SLHD
             </button>
@@ -149,6 +151,7 @@ export default function TabPenilaianSLHD() {
         <div className="pb-4 mb-6 border-b border-gray-200">
           <h3 className="font-bold text-gray-800">Hasil Penilaian</h3>
         </div>
+        
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -161,8 +164,8 @@ export default function TabPenilaianSLHD() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {paginatedData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
+                {paginatedDataNilai.map((item) => (
+                  <tr key={`nilai-${item.id}`} className="hover:bg-gray-50">
                     <td className="py-4 px-6 text-sm font-medium bg-green-50 text-gray-800">{item.name}</td>
                     <td className="py-4 px-6 text-center bg-green-50 text-gray-600 text-sm">{item.nilaiBukuI}</td>
                     <td className="py-4 px-6 text-center bg-green-50 text-gray-600 text-sm">{item.nilaiTabel}</td>
@@ -172,6 +175,17 @@ export default function TabPenilaianSLHD() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="mt-4 flex justify-between items-center">
+          <div className="text-sm text-gray-700">
+            Menampilkan {((currentPageNilai - 1) * itemsPerPage) + 1} - {Math.min(currentPageNilai * itemsPerPage, slhdData.length)} dari {slhdData.length} data
+          </div>
+          <Pagination
+            currentPage={currentPageNilai}
+            totalPages={totalPages}
+            onPageChange={setCurrentPageNilai}
+          />
         </div>
       </div>
     </div>

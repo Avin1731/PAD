@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from '../lib/axios';
+import { isAxiosError } from 'axios';
 
 // --- TIPE DATA UTAMA ---
 interface Province { id: string; name: string; }
@@ -59,15 +60,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock data fallback
+// --- MOCK DATA FALLBACK (Hanya untuk Dropdown Wilayah) ---
 const MOCK_PROVINCES: Province[] = [
   { id: '1', name: 'Jawa Barat' },
   { id: '2', name: 'Jawa Tengah' },
+  { id: '3', name: 'Jawa Timur' },
+  { id: '4', name: 'DI Yogyakarta' },
 ];
 
 const MOCK_REGENCIES: Regency[] = [
   { id: '1', name: 'Kota Bandung' },
   { id: '2', name: 'Kota Semarang' },
+  { id: '3', name: 'Kota Surabaya' },
+  { id: '4', name: 'Kota Yogyakarta' },
 ];
 
 const MOCK_JENIS_DLHS: JenisDlh[] = [
@@ -85,13 +90,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [regencies, setRegencies] = useState<Regency[]>([]);
   const [jenisDlhs, setJenisDlhs] = useState<JenisDlh[]>([]);
 
-  const fetchUser = async () => {
+  // --- FUNGSI FETCH USER YANG DIPERBAIKI ---
+  const fetchUser = async (): Promise<User | null> => {
     try {
-      const res = await axios.get('/api/user');
+      const res = await axios.get<User>('/api/user');
       setUser(res.data);
       return res.data;
     } catch (error: unknown) {
-      console.error("Error fetching user:", error);
+      // Jika error (misal 401 Unauthorized), kita anggap user sebagai Tamu (Guest).
+      // JANGAN melakukan auto-login Mock User di sini agar header Admin tidak bocor.
+      if (isAxiosError(error) && error.response?.status !== 401) {
+        console.error("Error fetching user:", error.message);
+      }
+      
       setUser(null);
       return null;
     }
@@ -99,62 +110,78 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      await fetchUser();
+      try {
+        // 1. Inisialisasi CSRF Protection
+        await axios.get('/sanctum/csrf-cookie');
+        
+        // 2. Cek status login pengguna saat ini
+        await fetchUser();
 
-      // Gunakan Promise.allSettled untuk handle error individual
-      const [provincesResult, regenciesResult, jenisDlhsResult] = await Promise.allSettled([
-        axios.get('/api/provinces').then(res => setProvinces(res.data)),
-        axios.get('/api/regencies/all').then(res => setRegencies(res.data)),
-        axios.get('/api/jenis-dlh').then(res => setJenisDlhs(res.data)),
-      ]);
+        // 3. Ambil data dropdown (Wilayah & Jenis DLH) secara paralel
+        const [provincesResult, regenciesResult, jenisDlhsResult] = await Promise.allSettled([
+          axios.get<Province[]>('/api/wilayah/provinces').then(res => setProvinces(res.data)),
+          axios.get<Regency[]>('/api/wilayah/regencies/all').then(res => setRegencies(res.data)),
+          axios.get<JenisDlh[]>('/api/jenis-dlh').then(res => setJenisDlhs(res.data)),
+        ]);
 
-      // Handle fallback untuk setiap request yang gagal
-      if (provincesResult.status === 'rejected') {
-        console.warn('Failed to fetch provinces, using mock data');
-        setProvinces(MOCK_PROVINCES);
-      }
-      if (regenciesResult.status === 'rejected') {
-        console.warn('Failed to fetch regencies, using mock data');
-        setRegencies(MOCK_REGENCIES);
-      }
-      if (jenisDlhsResult.status === 'rejected') {
-        console.warn('Failed to fetch jenis DLH, using mock data');
-        setJenisDlhs(MOCK_JENIS_DLHS);
-      }
+        // 4. Gunakan Mock Data HANYA untuk dropdown jika API gagal (Mode Development)
+        if (process.env.NODE_ENV === 'development') {
+          if (provincesResult.status === 'rejected') {
+            console.warn('Using Mock Provinces');
+            setProvinces(MOCK_PROVINCES);
+          }
+          if (regenciesResult.status === 'rejected') {
+            console.warn('Using Mock Regencies');
+            setRegencies(MOCK_REGENCIES);
+          }
+          if (jenisDlhsResult.status === 'rejected') {
+            console.warn('Using Mock Jenis DLH');
+            setJenisDlhs(MOCK_JENIS_DLHS);
+          }
+        }
 
-      setLoading(false);
+      } catch (error: unknown) {
+        console.error("Error during auth initialization:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     initAuth();
   }, []);
 
-  const register = async (data: RegisterData) => {
+  const register = async (data: RegisterData): Promise<void> => {
     try {
       await axios.get('/sanctum/csrf-cookie');
-      await axios.post('/api/register', data);
+      await axios.post('/api/auth/register', data);
+      
+      // Login otomatis setelah register berhasil
       await login({ 
         email: data.email, 
         password: data.password,
         role_id: String(data.role_id), 
         jenis_dlh_id: String(data.jenis_dlh_id) 
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Register failed:", error);
       throw error;
     }
   };
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
       await axios.get('/sanctum/csrf-cookie');
+      
       const payload = {
         email: credentials.email,
         password: credentials.password,
         role_id: credentials.role_id ? Number(credentials.role_id) : null,
         jenis_dlh_id: credentials.jenis_dlh_id ? Number(credentials.jenis_dlh_id) : null,
       };
-      await axios.post('/api/login', payload);
+      
+      await axios.post('/api/auth/login', payload);
 
+      // Ambil data user terbaru dari server untuk memastikan role valid
       const loggedInUser = await fetchUser();
       
       if (loggedInUser && loggedInUser.role && loggedInUser.role.name) {
@@ -164,31 +191,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         else if (roleName === 'dlh') router.push('/dlh-dashboard');
         else router.push('/');
       } else {
-        console.error("Login sukses tapi data user atau role tidak lengkap:", loggedInUser);
-        await logout();
-        throw new Error("Data pengguna tidak lengkap setelah login.");
+        console.error("Login API sukses, tetapi gagal mengambil profil user.");
+        await logout(); // Logout paksa untuk keamanan jika data korup
+        throw new Error("Gagal mengambil data profil pengguna.");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Login failed:", error);
       throw error;
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     try {
       await axios.get('/sanctum/csrf-cookie');
-      await axios.post('/api/logout');
+      await axios.post('/api/auth/logout');
+    } catch (error: unknown) {
+      console.error("Logout error (ignoring):", error);
+    } finally {
+      // Selalu bersihkan state user di client side, apa pun hasil API-nya
       setUser(null);
       router.push('/');
-    } catch (error) {
-      console.error("Logout failed:", error);
     }
   };
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        Memuat...
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <span className="ml-2">Memuat...</span>
       </div>
     );
   }

@@ -90,6 +90,8 @@ export default function PenilaianKabKotaPage() {
       {/* HEADER UTAMA */}
       <div>
         <div className="flex items-center text-sm text-green-600 mb-2">
+          <span className="cursor-pointer hover:underline">Dashboard</span>
+          <span className="mx-2">&gt;</span>
           <span className="cursor-pointer hover:underline">Penilaian</span>
           <span className="mx-2">&gt;</span>
           <span className="font-semibold">Penilaian Kab/Kota</span>
