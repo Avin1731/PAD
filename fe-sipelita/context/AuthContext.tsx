@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from '../lib/axios';
-import { isAxiosError } from 'axios';
 
 // --- TIPE DATA UTAMA ---
 interface Province { id: string; name: string; }
@@ -60,19 +59,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --- MOCK DATA FALLBACK (Hanya untuk Dropdown Wilayah) ---
+// Mock data fallback
 const MOCK_PROVINCES: Province[] = [
   { id: '1', name: 'Jawa Barat' },
   { id: '2', name: 'Jawa Tengah' },
-  { id: '3', name: 'Jawa Timur' },
-  { id: '4', name: 'DI Yogyakarta' },
 ];
 
 const MOCK_REGENCIES: Regency[] = [
   { id: '1', name: 'Kota Bandung' },
   { id: '2', name: 'Kota Semarang' },
-  { id: '3', name: 'Kota Surabaya' },
-  { id: '4', name: 'Kota Yogyakarta' },
 ];
 
 const MOCK_JENIS_DLHS: JenisDlh[] = [
@@ -97,12 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(res.data);
       return res.data;
     } catch (error: unknown) {
-      // Jika error (misal 401 Unauthorized), kita anggap user sebagai Tamu (Guest).
-      // JANGAN melakukan auto-login Mock User di sini agar header Admin tidak bocor.
-      if (isAxiosError(error) && error.response?.status !== 401) {
-        console.error("Error fetching user:", error.message);
-      }
-      
+      console.error("Error fetching user:", error);
       setUser(null);
       return null;
     }
@@ -110,41 +100,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        // 1. Inisialisasi CSRF Protection
-        await axios.get('/sanctum/csrf-cookie');
-        
-        // 2. Cek status login pengguna saat ini
-        await fetchUser();
+      await fetchUser();
 
-        // 3. Ambil data dropdown (Wilayah & Jenis DLH) secara paralel
-        const [provincesResult, regenciesResult, jenisDlhsResult] = await Promise.allSettled([
-          axios.get<Province[]>('/api/wilayah/provinces').then(res => setProvinces(res.data)),
-          axios.get<Regency[]>('/api/wilayah/regencies/all').then(res => setRegencies(res.data)),
-          axios.get<JenisDlh[]>('/api/jenis-dlh').then(res => setJenisDlhs(res.data)),
-        ]);
+      // Gunakan Promise.allSettled untuk handle error individual
+      const [provincesResult, regenciesResult, jenisDlhsResult] = await Promise.allSettled([
+        axios.get('/api/provinces').then(res => setProvinces(res.data)),
+        axios.get('/api/regencies/all').then(res => setRegencies(res.data)),
+        axios.get('/api/jenis-dlh').then(res => setJenisDlhs(res.data)),
+      ]);
 
-        // 4. Gunakan Mock Data HANYA untuk dropdown jika API gagal (Mode Development)
-        if (process.env.NODE_ENV === 'development') {
-          if (provincesResult.status === 'rejected') {
-            console.warn('Using Mock Provinces');
-            setProvinces(MOCK_PROVINCES);
-          }
-          if (regenciesResult.status === 'rejected') {
-            console.warn('Using Mock Regencies');
-            setRegencies(MOCK_REGENCIES);
-          }
-          if (jenisDlhsResult.status === 'rejected') {
-            console.warn('Using Mock Jenis DLH');
-            setJenisDlhs(MOCK_JENIS_DLHS);
-          }
-        }
-
-      } catch (error: unknown) {
-        console.error("Error during auth initialization:", error);
-      } finally {
-        setLoading(false);
+      // Handle fallback untuk setiap request yang gagal
+      if (provincesResult.status === 'rejected') {
+        console.warn('Failed to fetch provinces, using mock data');
+        setProvinces(MOCK_PROVINCES);
       }
+      if (regenciesResult.status === 'rejected') {
+        console.warn('Failed to fetch regencies, using mock data');
+        setRegencies(MOCK_REGENCIES);
+      }
+      if (jenisDlhsResult.status === 'rejected') {
+        console.warn('Failed to fetch jenis DLH, using mock data');
+        setJenisDlhs(MOCK_JENIS_DLHS);
+      }
+
+      setLoading(false);
     };
 
     initAuth();
@@ -211,6 +190,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Selalu bersihkan state user di client side, apa pun hasil API-nya
       setUser(null);
       router.push('/');
+    } catch (error) {
+      console.error("Logout failed:", error);
     }
   };
 
